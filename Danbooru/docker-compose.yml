@@ -1,0 +1,13 @@
+version: '3.4'
+
+services:
+  danbooru.ui:
+    image: ${DOCKER_REGISTRY-}danbooruui
+    build:
+      context: .
+      dockerfile: Danbooru.UI/Danbooru.UI/Dockerfile
+    ports:
+      - "9090:8080"
+      - "9091:8081"  
+    restart: unless-stopped
+
