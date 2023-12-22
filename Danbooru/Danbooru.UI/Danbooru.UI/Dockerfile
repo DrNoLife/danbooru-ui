@@ -24,4 +24,12 @@ RUN dotnet publish "./Danbooru.UI.csproj" -c $BUILD_CONFIGURATION -o /app/publis
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+COPY ../../certificate.pfx . 
+ENV ASPNETCORE_URLS=https://+;http://+
+ENV ASPNETCORE_HTTPS_PORT=443
+ENV ASPNETCORE_Kestrel__Certificates__Default__Password="nekoneko"
+ENV ASPNETCORE_Kestrel__Certificates__Default__Path=/app/certificate.pfx
+
+
 ENTRYPOINT ["dotnet", "Danbooru.UI.dll"]
