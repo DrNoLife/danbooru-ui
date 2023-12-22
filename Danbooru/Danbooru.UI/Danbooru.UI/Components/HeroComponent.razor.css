@@ -1,0 +1,5 @@
+﻿.title {
+    font-family: var(--font-family-header);
+    font-size: 78px;
+    margin: inherit;
+}

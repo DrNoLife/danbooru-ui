@@ -5,6 +5,10 @@ VisualStudioVersion = 17.9.34310.174
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Danbooru.ApiWrapper", "Danbooru.ApiWrapper\Danbooru.ApiWrapper.csproj", "{AD8A7224-C827-4015-8A07-706504C0E3EB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Danbooru.UI", "Danbooru.UI\Danbooru.UI\Danbooru.UI.csproj", "{70ADF2F8-A036-40C4-9EEB-0312C0244D78}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Danbooru.UI.Client", "Danbooru.UI\Danbooru.UI.Client\Danbooru.UI.Client.csproj", "{000F819B-7513-4035-9EAA-B62AF0756CE5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{AD8A7224-C827-4015-8A07-706504C0E3EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AD8A7224-C827-4015-8A07-706504C0E3EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AD8A7224-C827-4015-8A07-706504C0E3EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70ADF2F8-A036-40C4-9EEB-0312C0244D78}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70ADF2F8-A036-40C4-9EEB-0312C0244D78}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70ADF2F8-A036-40C4-9EEB-0312C0244D78}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70ADF2F8-A036-40C4-9EEB-0312C0244D78}.Release|Any CPU.Build.0 = Release|Any CPU
+		{000F819B-7513-4035-9EAA-B62AF0756CE5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{000F819B-7513-4035-9EAA-B62AF0756CE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{000F819B-7513-4035-9EAA-B62AF0756CE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{000F819B-7513-4035-9EAA-B62AF0756CE5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

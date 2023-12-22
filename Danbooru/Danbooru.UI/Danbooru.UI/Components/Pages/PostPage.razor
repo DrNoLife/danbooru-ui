@@ -1,0 +1,149 @@
+﻿@page "/post/{Id:int}"
+@using Danbooru.ApiWrapper.Interfaces
+@using Danbooru.ApiWrapper.Models
+@using Danbooru.ApiWrapper.Extensions
+
+@attribute [StreamRendering]
+
+<div class="post-page">
+
+    @if (_post is null)
+    {
+        <p>Loading...</p>
+    }
+    else
+    {
+        <aside>
+            <section class="tags-section">
+                @{
+                    if (_post.TagsArtist.Count > 0)
+                    {
+                        <div class="tag-group">
+                            <div class="title-container">
+                                <p>Artist</p>
+                            </div>
+                            <div class="tag-container artist">
+                                @foreach (var tag in _post.TagsArtist)
+                                {
+                                    <p><a href="/search/@tag">@tag</a></p>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    if (_post.TagsCharacter.Count > 0)
+                    {
+                        <div class="tag-group">
+                            <div class="title-container">
+                                <p>Character</p>
+                            </div>
+                            <div class="tag-container character">
+                                @foreach (var tag in _post.TagsCharacter)
+                                {
+                                    <p><a href="/search/@tag">@tag</a></p>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    if (_post.TagsGeneral.Count > 0)
+                    {
+                        <div class="tag-group">
+                            <div class="title-container">
+                                <p>General</p>
+                            </div>
+                            <div class="tag-container general">
+                                @foreach (var tag in _post.TagsGeneral)
+                                {
+                                    <p><a href="/search/@tag">@tag</a></p>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    if (_post.TagsMeta.Count > 0)
+                    {
+                        <div class="tag-group">
+                            <div class="title-container">
+                                <p>Meta</p>
+                            </div>
+                            <div class="tag-container meta">
+                                @foreach (var tag in _post.TagsMeta)
+                                {
+                                    <p><a href="/search/@tag">@tag</a></p>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </section>
+        </aside>
+        <article>
+            <section class="image-section">
+                <div class="image-container">
+                    <img src="@_post.FileUrl" />
+                </div>
+            </section>
+        </article>
+        <aside id="right-side">
+            <div class="tag-group">
+                <div class="title-container">
+                    <p>Information</p>
+                </div>
+                <div class="tag-container">
+                    <div class="row">
+                        <p>Id:</p>
+                        <p>@_post.Id</p>
+                    </div>
+
+                    <div class="row">
+                        <p>Uploader:</p>
+                        <p>@_post.UploaderId</p>
+                    </div>
+
+                    <div class="row">
+                        <p>Date:</p>
+                        <p>@_post.CreatedAt</p>
+                    </div>
+
+                    <div class="row">
+                        <p>Rating:</p>
+                        <p>@_post.Rating</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tag-group">
+                <div class="title-container">
+                    <p>Options</p>
+                </div>
+                <div class="tag-container">
+                    <p><a target="_blank" href="@_post.FileUrl">View Original</a></p>
+                    <p><a href="https://danbooru.donmai.us/iqdb_queries?post_id=@_post.Id">Find Similar</a></p>
+                    <p><a href="#">Download</a></p>
+                </div>
+            </div>
+        </aside>
+    }
+
+</div>
+
+
+
+
+
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    [Inject]
+    public IDanbooruWrapper DanbooruWrapper { get; set; }
+
+    private Post? _post;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _post = await DanbooruWrapper.Posts.GetPostByIdAsync(Id);
+    }
+}

@@ -1,0 +1,97 @@
+﻿.post-page {
+    display: flex;
+    padding: 0px;
+    gap: 25px;
+    height: 100vh;
+    box-sizing: border-box;
+}
+
+aside {
+    flex: 1;
+    order: -1;
+    background-color: var(--secondary);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    gap: 25px;
+    flex-direction: column;
+    max-height: 100%;
+    overflow-y: scroll;
+}
+
+#right-side {
+    order: 3;
+}
+
+aside p {
+    margin-bottom: 0;
+}
+
+article {
+    flex: 5;
+}
+
+.image-container {
+    max-width: 98vw;
+    max-height: 98vh;
+    object-fit: scale-down;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-self: center;
+}
+
+
+    .image-container img {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 10px;
+    }
+
+section.image-section {
+    max-height: 100vh;
+    height: 100%;
+    display: flex;
+}
+
+.tag-group {
+    color: var(--text-secondary);
+}
+
+.title-container {
+    font-weight: bold;
+    color: var(--text);
+}
+
+.tags-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.tags-section .tag-container a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.tag-container.artist {
+    color: var(--artist-color);
+}
+.tag-container.copyright {
+    color: var(--copyright-color);
+}
+.tag-container.character {
+    color: var(--character-color);
+}
+.tag-container.general {
+    color: var(--general-color);
+}
+.tag-container.meta {
+    color: var(--meta-color);
+}

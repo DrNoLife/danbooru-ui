@@ -1,0 +1,91 @@
+﻿@page "/"
+@page "/Page/{PageNumber:int}"
+@page "/Search/{SearchTerm}"
+@page "/Search/{SearchTerm}/Page/{PageNumber:int}"
+
+@using Danbooru.UI.Client.Pages
+@using Danbooru.ApiWrapper.Interfaces
+@using Danbooru.ApiWrapper.Models
+@using Danbooru.ApiWrapper.Models.Url
+
+<PageTitle>Gallery</PageTitle>
+
+<header>
+    <HeroComponent />
+    <TagsSearch />
+</header>
+
+
+
+<section class="gallery">
+
+    @foreach (var post in _posts)
+    {
+        @if (!String.IsNullOrEmpty(post.PreviewFileUrl))
+        {
+            <div class="post">
+                <a href="/post/@post.Id">
+                    <img src="@post.PreviewFileUrl" />
+                </a>
+            </div>
+        }
+    }
+
+</section>
+
+<section class="pagination-container">
+    @for (int i = _paginationMinPageNumber; i <= _paginationMaxPageNumber; i++)
+    {
+        var url = String.IsNullOrEmpty(SearchTerm) ? $"/Page/{i}" : $"/Search/{SearchTerm}/Page/{i}";
+
+        if (i == _internalPageNumber)
+        {
+            <a class="active-page" href="@url">@i</a>
+        }
+        else
+        {
+            <a href="@url">@i</a>
+        }
+    }
+</section>
+
+
+@code {
+    [Inject]
+    public IDanbooruWrapper DanbooruWrapper { get; set; }
+
+    [Parameter]
+    public int PageNumber { get; set; }
+
+    [Parameter]
+    public string? SearchTerm { get; set; }
+
+    private List<Post> _posts = new();
+
+    private int _paginationMinPageNumber;
+    private int _paginationMaxPageNumber;
+    private int _internalPageNumber = 1;
+    private int _paginationStep = 5;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CalculatePaginationStuff();
+
+        var parameters = new UrlParameters()
+        {
+            PageItems = 75,
+            Page = _internalPageNumber
+        };
+
+        _posts = String.IsNullOrEmpty(SearchTerm) 
+            ? await DanbooruWrapper.Posts.GetPostsAsync(parameters) 
+            : await DanbooruWrapper.Posts.GetPostsByTagAsync(SearchTerm, parameters);
+    }
+
+    private void CalculatePaginationStuff()
+    {
+        _internalPageNumber = PageNumber == 0 ? 1 : PageNumber;
+        _paginationMinPageNumber = Math.Max(_internalPageNumber - _paginationStep, 1);
+        _paginationMaxPageNumber = _internalPageNumber + _paginationStep;
+    }
+}

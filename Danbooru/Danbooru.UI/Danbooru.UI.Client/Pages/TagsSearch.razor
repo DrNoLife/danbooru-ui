@@ -1,0 +1,89 @@
+﻿@using Danbooru.ApiWrapper.Interfaces
+@using Danbooru.ApiWrapper.Models
+@rendermode InteractiveWebAssembly
+
+<section class="search-container">
+    <form @onsubmit="HandleSearch" name="tag-form-searching">
+        <input autocomplete="off" spellcheck="false" type="text" name="search-after-tag" list="tags" @oninput="OnSearchInputChanged" />
+        <datalist id="tags">
+            @if(_tags is not null)
+            {
+                foreach (var tag in _tags)
+                {
+                    <option value="@tag.Value" />
+                }
+            }
+        </datalist>
+
+        <button type="submit">Search</button>
+    </form>
+</section>
+
+@code {
+    [Parameter]
+    public string SearchQuery { get; set; }
+
+    [Inject]
+    public IDanbooruWrapper DanbooruWrapper { get; set; }
+
+    [Inject]
+    public NavigationManager NavigationManager { get; set; }
+
+    private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+    private const int debouncePeriod = 250;
+    private string currentInputValue;
+
+    private List<TagAutocomplete>? _tags;
+
+    private async Task OnSearchInputChanged(ChangeEventArgs args)
+    {
+        currentInputValue = args.Value?.ToString();
+        cancellationTokenSource.Cancel();
+        cancellationTokenSource = new CancellationTokenSource();
+
+        try
+        {
+            await Task.Delay(debouncePeriod, cancellationTokenSource.Token);
+            await PerformSearchAsync();
+        }
+        catch (TaskCanceledException)
+        {
+            // Task was cancelled, do nothing
+        }
+    }
+
+    private async Task PerformSearchAsync()
+    {
+        SearchQuery = currentInputValue;
+
+        if (String.IsNullOrEmpty(SearchQuery))
+        {
+            await GoToIndex();
+            return;
+        }
+
+        _tags = await DanbooruWrapper.Tags.AutocompleteAfterTag(SearchQuery);
+    }
+
+    public void Dispose()
+    {
+        cancellationTokenSource?.Cancel();
+    }
+
+    private async Task HandleSearch()
+    {
+        var tag = _tags.Find(x => x.Value.Equals(SearchQuery));
+
+        if(tag is null)
+        {
+            return;
+        }
+
+        NavigationManager.NavigateTo($"/Search/{tag.Value}");
+    }
+
+    private async Task GoToIndex()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+}
