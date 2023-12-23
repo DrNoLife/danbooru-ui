@@ -16,7 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Danbooru.ApiWrapper\Danbooru.ApiWrapper.csproj" />
-    <ProjectReference Include="..\..\WebAppCommon\WebAppCommon.csproj" />
   </ItemGroup>
 
 </Project>

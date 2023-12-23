@@ -1,8 +1,7 @@
 using Danbooru.UI.Client.Pages;
 using Danbooru.UI.Components;
 using Danbooru.ApiWrapper.Extensions;
-using Danbooru.UI.Interfaces;
-using Danbooru.UI.Services;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,9 +12,6 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddDanbooruWrapper();
 
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICookieService, CookieService>();
-builder.Services.AddScoped<IOptionsFactory, OptionsFactory>();
 
 var app = builder.Build();
 

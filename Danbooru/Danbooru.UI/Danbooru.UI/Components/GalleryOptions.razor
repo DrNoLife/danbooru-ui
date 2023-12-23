@@ -1,4 +1,4 @@
-﻿@using Danbooru.UI.Interfaces
+﻿
 @rendermode InteractiveServer
 
 <div class="options-container">
@@ -19,25 +19,8 @@
 
 @code {
 
-    [Inject]
-    public ICookieService CookieService { get; set; }
-
-
     private void HandleAspectRatioChange()
     {
         string cookieName = "aspect-ratio";
-
-        // Retrieve the value from cookies.
-        string aspectRatio = CookieService.GetCookie(cookieName) ?? "1";
-
-        // Based on the old value, set the new value.
-        string newValue = aspectRatio switch
-        {
-            "1" => "0",
-            "0" => "1",
-            _ => "1"
-        };
-
-        CookieService.SetCookie(cookieName, newValue, null);
     }
 }
