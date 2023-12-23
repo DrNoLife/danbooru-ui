@@ -8,17 +8,41 @@
     box-sizing: border-box;
 }
 
+    .gallery.card {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr !important; /* Creates three columns */
+        justify-items: center; /* Center the content in the middle column */
+        grid-gap: 10px; /* Adjust the gap as needed */
+        max-width: 100%; /* Adjust if you have a specific maximum width in mind */
+        margin: 0 auto; /* Center the grid in the container */
+    }
+
+    .gallery.card .post {
+        grid-column: 2;
+    }
+
 .post {
-    width: 250px;
+    /*width: 250px;*/
     overflow: hidden;
+    position: relative;
 }
 
     .post img {
         max-width: 100%;
         width: 100%;
-        aspect-ratio: 1;
+        /*aspect-ratio: 1;*/
         background-repeat: no-repeat;
         background-size: cover;
+    }
+
+    .post .meta-data {
+        position: absolute;
+        background-color: rgba(0, 0, 0, 0.5);
+        padding: 5px;
+    }
+
+    .post .meta-data p {
+        margin: 0px;
     }
 
 .pagination-container {

@@ -233,4 +233,6 @@ public class Post
 
         return tags.ToList();
     }
+
+    public bool IsImage => !(FileExt.Equals("webm") || FileExt.Equals("mp4") || FileExt.Equals("zip"));
 }

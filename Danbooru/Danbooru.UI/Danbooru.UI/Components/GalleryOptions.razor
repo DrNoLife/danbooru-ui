@@ -1,4 +1,5 @@
-﻿
+﻿@using Danbooru.UI.Interfaces
+
 @rendermode InteractiveServer
 
 <div class="options-container">
@@ -8,19 +9,45 @@
     </div>
 
     <div class="option">
-        <p>Button controlling layout (gallery/card).</p>
+        <button @onclick='() => HandleViewChange("catalog")'>Catalog</button>
+        <button @onclick='() => HandleViewChange("card")'>Card</button>
     </div>
 
-    <div class="option" @onclick="HandleAspectRatioChange">
-        <p>Square aspect ratio or just natural.</p>
+    <div class="option">
+        <button @onclick='() => HandleAspectRatioChange("square")'>Square</button>
+        <button @onclick='() => HandleAspectRatioChange("natural")'>Natural</button>
     </div>
 
 </div>
 
 @code {
+    [Inject]
+    public IGallerySettingsService GallerySettingsService { get; set; }
 
-    private void HandleAspectRatioChange()
+    private void HandleAspectRatioChange(string buttonPressed)
     {
-        string cookieName = "aspect-ratio";
+        string newAspectRatio = buttonPressed switch
+        {
+            "square" => "1",
+            "natural" => "0",
+            _ => "1"
+        };
+
+        GallerySettingsService.UpdateSetting(x => x.AspectRatio = newAspectRatio);
+
+        GallerySettingsService.NavigateWithUpdatedSettings();
+    }
+
+    private void HandleViewChange(string buttonPressed)
+    {
+        string newView = buttonPressed switch
+        {
+            "catalog" => String.Empty,
+            "card" => "card",
+            _ => String.Empty
+        };
+
+        GallerySettingsService.UpdateSetting(x => x.DisplayType = newView);
+        GallerySettingsService.NavigateWithUpdatedSettings();
     }
 }

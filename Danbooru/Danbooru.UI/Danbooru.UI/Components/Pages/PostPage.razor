@@ -81,10 +81,9 @@
         <article>
             <section class="image-section">
                 <div class="image-container">
-                    @if(_post.FileExt.Equals("mp4"))
+                    @if(!_post.IsImage)
                     {
-                        <video controls autoplay>
-                            <source src="@_post.FileUrl" type="video/mp4" />
+                        <video controls="controls" autoplay="autoplay" loop="loop" src="@_post.LargeFileUrl">
                         </video>
                     } 
                     else
