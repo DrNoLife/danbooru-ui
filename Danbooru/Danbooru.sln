@@ -9,8 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Danbooru.UI", "Danbooru.UI\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Danbooru.UI.Client", "Danbooru.UI\Danbooru.UI.Client\Danbooru.UI.Client.csproj", "{000F819B-7513-4035-9EAA-B62AF0756CE5}"
 EndProject
-Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{C29587CB-5FB3-495D-870E-00CD5E08A470}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,10 +27,6 @@ Global
 		{000F819B-7513-4035-9EAA-B62AF0756CE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{000F819B-7513-4035-9EAA-B62AF0756CE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{000F819B-7513-4035-9EAA-B62AF0756CE5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C29587CB-5FB3-495D-870E-00CD5E08A470}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C29587CB-5FB3-495D-870E-00CD5E08A470}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C29587CB-5FB3-495D-870E-00CD5E08A470}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C29587CB-5FB3-495D-870E-00CD5E08A470}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

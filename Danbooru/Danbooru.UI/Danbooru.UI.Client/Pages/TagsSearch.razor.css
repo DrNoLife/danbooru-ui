@@ -24,3 +24,23 @@ input {
     min-width: 25vw;
 }
 
+.input-section {
+    position: relative;
+}
+
+.auto-complete-suggestions {
+    position: absolute;
+    background-color: var(--background);
+    width: 100%;
+    max-height: 500px;
+    overflow-y: scroll;
+}
+
+.auto-complete-option {
+    padding: 10px;
+}
+
+.auto-complete-option:hover {
+    cursor: pointer;
+    background-color: var(--secondary);
+}

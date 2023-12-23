@@ -25,7 +25,7 @@
         {
             <div class="post">
                 <a href="/post/@post.Id">
-                    <img src="@post.PreviewFileUrl" />
+                    <img loading="lazy" style="background-image: url(@post.PreviewFileUrl)" src="@post.LargeFileUrl" />
                 </a>
             </div>
         }
@@ -79,7 +79,7 @@
 
         _posts = String.IsNullOrEmpty(SearchTerm) 
             ? await DanbooruWrapper.Posts.GetPostsAsync(parameters) 
-            : await DanbooruWrapper.Posts.GetPostsByTagAsync(SearchTerm, parameters);
+            : await DanbooruWrapper.Posts.GetPostsByTagsAsync(SearchTerm.Split(' '), parameters);
     }
 
     private void CalculatePaginationStuff()

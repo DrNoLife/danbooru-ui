@@ -13,7 +13,7 @@
     }
     else
     {
-        <aside>
+        <aside class="tags-aside">
             <section class="tags-section">
                 @{
                     if (_post.TagsArtist.Count > 0)
@@ -81,7 +81,17 @@
         <article>
             <section class="image-section">
                 <div class="image-container">
-                    <img src="@_post.FileUrl" />
+                    @if(_post.FileExt.Equals("mp4"))
+                    {
+                        <video controls autoplay>
+                            <source src="@_post.FileUrl" type="video/mp4" />
+                        </video>
+                    } 
+                    else
+                    {
+                        <img src="@_post.FileUrl" />
+                    }
+                    
                 </div>
             </section>
         </article>

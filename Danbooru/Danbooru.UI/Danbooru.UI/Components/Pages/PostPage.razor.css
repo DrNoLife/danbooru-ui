@@ -95,3 +95,23 @@ section.image-section {
 .tag-container.meta {
     color: var(--meta-color);
 }
+
+@media (max-width: 1200px) {
+    .post-page {
+        flex-direction: column;
+        height: auto;
+    }
+
+    article {
+        order: 1;
+    }
+
+    .tags-aside {
+        order: 2;
+    }
+
+    .image-container {
+        max-width: 100vw;
+        max-height: 100vh;
+    }
+}

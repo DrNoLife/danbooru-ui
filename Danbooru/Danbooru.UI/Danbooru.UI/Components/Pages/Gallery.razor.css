@@ -17,6 +17,8 @@
         max-width: 100%;
         width: 100%;
         aspect-ratio: 1;
+        background-repeat: no-repeat;
+        background-size: cover;
     }
 
 .pagination-container {
@@ -53,3 +55,21 @@ header {
     justify-content: space-between;
 }
 
+@media (max-width: 500px) {
+    header {
+        flex-direction: column;
+    }
+
+    .post {
+        width: 100%;
+    }
+
+    .pagination-container {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .post img {
+        aspect-ratio: auto;
+    }
+}

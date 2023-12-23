@@ -4,24 +4,30 @@
 
 <section class="search-container">
     <form @onsubmit="HandleSearch" name="tag-form-searching">
-        <input autocomplete="off" spellcheck="false" type="text" name="search-after-tag" list="tags" @oninput="OnSearchInputChanged" />
-        <datalist id="tags">
-            @if(_tags is not null)
-            {
-                foreach (var tag in _tags)
+        <section class="input-section">
+
+            <input autocomplete="off" spellcheck="false" type="text" name="search-after-tag" list="tags" @bind-value="SearchQuery" @oninput="OnSearchInputChanged" />
+
+            <div class="auto-complete-suggestions">
+                @if (_tags is not null)
                 {
-                    <option value="@tag.Value" />
+                    foreach (var tag in _tags)
+                    {
+                        <div class="auto-complete-option" @onclick="() => HandleTagSelected(tag)">
+                            <p>@tag.Value</p>
+                        </div>
+                    }
                 }
-            }
-        </datalist>
+            </div>
+        </section>
 
         <button type="submit">Search</button>
     </form>
 </section>
 
 @code {
-    [Parameter]
     public string SearchQuery { get; set; }
+    public string SearchQueryBehind { get; set; }
 
     [Inject]
     public IDanbooruWrapper DanbooruWrapper { get; set; }
@@ -35,9 +41,23 @@
 
     private List<TagAutocomplete>? _tags;
 
+    private List<TagAutocomplete> _selectedTags = new();
+
     private async Task OnSearchInputChanged(ChangeEventArgs args)
     {
-        currentInputValue = args.Value?.ToString();
+        currentInputValue = args.Value?.ToString().Trim();
+
+        var currentValueButSplit = currentInputValue.Split(' ');
+
+        if (currentValueButSplit.Length > _selectedTags.Count)
+        {
+            var valuesToSearchAfterArray = currentValueButSplit[_selectedTags.Count..];
+            var valuesToSearchAfter = String.Join(' ', valuesToSearchAfterArray);
+
+            currentInputValue = valuesToSearchAfter;
+        }
+
+
         cancellationTokenSource.Cancel();
         cancellationTokenSource = new CancellationTokenSource();
 
@@ -54,15 +74,15 @@
 
     private async Task PerformSearchAsync()
     {
-        SearchQuery = currentInputValue;
+        //SearchQuery = currentInputValue;
 
-        if (String.IsNullOrEmpty(SearchQuery))
+        if (String.IsNullOrEmpty(currentInputValue))
         {
-            await GoToIndex();
+            //await GoToIndex();
             return;
         }
 
-        _tags = await DanbooruWrapper.Tags.AutocompleteAfterTag(SearchQuery);
+        _tags = await DanbooruWrapper.Tags.AutocompleteAfterTag(currentInputValue);
     }
 
     public void Dispose()
@@ -72,18 +92,30 @@
 
     private async Task HandleSearch()
     {
-        var tag = _tags.Find(x => x.Value.Equals(SearchQuery));
-
-        if(tag is null)
+        if (String.IsNullOrEmpty(SearchQuery))
         {
             return;
         }
 
-        NavigationManager.NavigateTo($"/Search/{tag.Value}");
+        NavigationManager.NavigateTo($"/Search/{SearchQuery.Trim()}");
     }
 
     private async Task GoToIndex()
     {
         NavigationManager.NavigateTo("/");
+    }
+
+    private void HandleTagSelected(TagAutocomplete selectedTag)
+    {
+        if (_selectedTags.Contains(selectedTag))
+        {
+            return;
+        }
+
+        _selectedTags.Add(selectedTag);
+        _tags.Clear();
+        SearchQueryBehind += $" {selectedTag.Value}";
+        SearchQuery = SearchQueryBehind;
+        StateHasChanged();
     }
 }

@@ -3,3 +3,9 @@
     font-size: 78px;
     margin: inherit;
 }
+
+@media (max-width: 500px) {
+    .title {
+        font-size: 70px;
+    }
+}
