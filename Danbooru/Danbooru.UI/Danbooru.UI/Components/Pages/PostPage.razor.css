@@ -57,6 +57,7 @@ section.image-section {
 
 .tag-group {
     color: var(--text-secondary);
+    word-break: break-all;
 }
 
 .title-container {

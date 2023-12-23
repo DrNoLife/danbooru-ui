@@ -25,7 +25,7 @@ public class GallerySettingsService : IGallerySettingsService
 
         if (query.Count > 0)
         {
-            _currentOptions.AspectRatio = query.TryGetValue("aspect-ratio", out var ar) ? ar : "1";
+            _currentOptions.AspectRatio = query.TryGetValue("aspect-ratio", out var ar) ? ar : "0";
             _currentOptions.DisplayType = query.TryGetValue("display", out var dp) ? dp : "gallery";
             _currentOptions.ImageWidth = query.TryGetValue("image-width", out var iw) && int.TryParse(iw, out var width) ? width : 250;
         }

@@ -5,17 +5,45 @@
 <div class="options-container">
 
     <div class="option">
-        <p>Slider, controlling image width.</p>
+        <p>Image Width</p>
+        <div class="option-group">
+            <button @onclick='() => HandleWidthChange(150)'>150px</button>
+            <button @onclick='() => HandleWidthChange(250)'>250px</button>
+            <button @onclick='() => HandleWidthChange(350)'>350px</button>
+            <button @onclick='() => HandleWidthChange(450)'>450px</button>
+        </div>
     </div>
 
     <div class="option">
-        <button @onclick='() => HandleViewChange("catalog")'>Catalog</button>
-        <button @onclick='() => HandleViewChange("card")'>Card</button>
+        <p>Layout</p>
+        <div class="option-group">
+            <button @onclick='() => HandleViewChange("catalog")'>
+                <span class="material-symbols-outlined">
+                    grid_view
+                </span>
+            </button>
+            <button @onclick='() => HandleViewChange("card")'>
+                <span class="material-symbols-outlined">
+                    panorama_vertical
+                </span>
+            </button>
+        </div>
     </div>
 
     <div class="option">
-        <button @onclick='() => HandleAspectRatioChange("square")'>Square</button>
-        <button @onclick='() => HandleAspectRatioChange("natural")'>Natural</button>
+        <p>Aspect Ratio</p>
+        <div class="option-group">
+            <button @onclick='() => HandleAspectRatioChange("square")'>
+                <span class="material-symbols-outlined">
+                    check_box_outline_blank
+                </span>
+            </button>
+            <button @onclick='() => HandleAspectRatioChange("natural")'>
+                <span class="material-symbols-outlined">
+                    crop_portrait
+                </span>
+            </button>
+        </div>
     </div>
 
 </div>
@@ -48,6 +76,12 @@
         };
 
         GallerySettingsService.UpdateSetting(x => x.DisplayType = newView);
+        GallerySettingsService.NavigateWithUpdatedSettings();
+    }
+
+    private void HandleWidthChange(int widthInPixels)
+    {
+        GallerySettingsService.UpdateSetting(x => x.ImageWidth = widthInPixels);
         GallerySettingsService.NavigateWithUpdatedSettings();
     }
 }

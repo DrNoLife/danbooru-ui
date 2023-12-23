@@ -6,4 +6,30 @@
 
 .option {
     cursor: pointer;
+    color: var(--accent);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.option > p {
+    font-weight: bold;
+}
+
+.option-group {
+    flex: 1;
+    display: flex;
+}
+
+.option button {
+    border: none;
+    background-color: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 10px;
+}
+
+.option button.active {
+    font-weight: bold;
 }
