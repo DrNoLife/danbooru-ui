@@ -1,0 +1,43 @@
+﻿@using Danbooru.UI.Interfaces
+@rendermode InteractiveServer
+
+<div class="options-container">
+
+    <div class="option">
+        <p>Slider, controlling image width.</p>
+    </div>
+
+    <div class="option">
+        <p>Button controlling layout (gallery/card).</p>
+    </div>
+
+    <div class="option" @onclick="HandleAspectRatioChange">
+        <p>Square aspect ratio or just natural.</p>
+    </div>
+
+</div>
+
+@code {
+
+    [Inject]
+    public ICookieService CookieService { get; set; }
+
+
+    private void HandleAspectRatioChange()
+    {
+        string cookieName = "aspect-ratio";
+
+        // Retrieve the value from cookies.
+        string aspectRatio = CookieService.GetCookie(cookieName) ?? "1";
+
+        // Based on the old value, set the new value.
+        string newValue = aspectRatio switch
+        {
+            "1" => "0",
+            "0" => "1",
+            _ => "1"
+        };
+
+        CookieService.SetCookie(cookieName, newValue, null);
+    }
+}

@@ -1,0 +1,13 @@
+﻿header {
+    display: flex;
+    align-content: center;
+    padding: 25px;
+    gap: 25px;
+    flex-direction: column;
+}
+
+    header .upper-area,
+    header .lower-area {
+        display: flex;
+        justify-content: space-between;
+    }

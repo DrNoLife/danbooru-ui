@@ -47,19 +47,13 @@
     padding: 50px;
 }
 
-header {
+.gallery-options-section {
     display: flex;
-    align-content: center;
-    padding: 25px;
-    gap: 25px;
-    justify-content: space-between;
+    justify-content: flex-end;
 }
 
-@media (max-width: 500px) {
-    header {
-        flex-direction: column;
-    }
 
+@media (max-width: 500px) {
     .post {
         width: 100%;
     }

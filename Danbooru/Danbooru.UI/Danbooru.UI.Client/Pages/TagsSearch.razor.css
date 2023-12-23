@@ -18,6 +18,11 @@ input, button {
 }
 button {
     padding: 10px 20px;
+    cursor: pointer;
+    transition: 150ms all ease-in-out;
+}
+button:hover {
+    background-color: var(--primary);
 }
 
 input {

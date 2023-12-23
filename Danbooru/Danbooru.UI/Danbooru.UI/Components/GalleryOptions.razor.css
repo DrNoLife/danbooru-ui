@@ -1,0 +1,9 @@
+﻿.options-container {
+    display: flex;
+    gap: 25px;
+    padding: 0px 25px;
+}
+
+.option {
+    cursor: pointer;
+}

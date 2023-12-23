@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34310.174
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Danbooru.ApiWrapper", "Danbooru.ApiWrapper\Danbooru.ApiWrapper.csproj", "{AD8A7224-C827-4015-8A07-706504C0E3EB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Danbooru.ApiWrapper", "Danbooru.ApiWrapper\Danbooru.ApiWrapper.csproj", "{AD8A7224-C827-4015-8A07-706504C0E3EB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Danbooru.UI", "Danbooru.UI\Danbooru.UI\Danbooru.UI.csproj", "{70ADF2F8-A036-40C4-9EEB-0312C0244D78}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Danbooru.UI", "Danbooru.UI\Danbooru.UI\Danbooru.UI.csproj", "{70ADF2F8-A036-40C4-9EEB-0312C0244D78}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Danbooru.UI.Client", "Danbooru.UI\Danbooru.UI.Client\Danbooru.UI.Client.csproj", "{000F819B-7513-4035-9EAA-B62AF0756CE5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Danbooru.UI.Client", "Danbooru.UI\Danbooru.UI.Client\Danbooru.UI.Client.csproj", "{000F819B-7513-4035-9EAA-B62AF0756CE5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebAppCommon", "WebAppCommon\WebAppCommon.csproj", "{8F841F85-17C1-4F33-8117-C619E08B724B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{000F819B-7513-4035-9EAA-B62AF0756CE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{000F819B-7513-4035-9EAA-B62AF0756CE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{000F819B-7513-4035-9EAA-B62AF0756CE5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F841F85-17C1-4F33-8117-C619E08B724B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F841F85-17C1-4F33-8117-C619E08B724B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F841F85-17C1-4F33-8117-C619E08B724B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F841F85-17C1-4F33-8117-C619E08B724B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

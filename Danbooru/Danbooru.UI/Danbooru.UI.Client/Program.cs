@@ -5,4 +5,5 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
 builder.Services.AddDanbooruWrapper();
 
+
 await builder.Build().RunAsync();

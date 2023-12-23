@@ -7,15 +7,15 @@
 @using Danbooru.ApiWrapper.Interfaces
 @using Danbooru.ApiWrapper.Models
 @using Danbooru.ApiWrapper.Models.Url
+@using Danbooru.UI.Components.Layout
 
 <PageTitle>Gallery</PageTitle>
 
-<header>
-    <HeroComponent />
-    <TagsSearch />
-</header>
+<Header />
 
-
+<section class="gallery-options-section">
+    <GalleryOptions />
+</section>
 
 <section class="gallery">
 
@@ -25,7 +25,10 @@
         {
             <div class="post">
                 <a href="/post/@post.Id">
-                    <img loading="lazy" style="background-image: url(@post.PreviewFileUrl)" src="@post.LargeFileUrl" />
+                    <img 
+                        loading="lazy"
+                        style="background-image: url(@post.PreviewFileUrl);"
+                        src="@post.LargeFileUrl" />
                 </a>
             </div>
         }
@@ -73,7 +76,7 @@
 
         var parameters = new UrlParameters()
         {
-            PageItems = 75,
+            PageItems = 50,
             Page = _internalPageNumber
         };
 

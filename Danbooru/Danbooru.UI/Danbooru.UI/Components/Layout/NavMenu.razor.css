@@ -1,4 +1,4 @@
-.navbar-toggler {
+/*.navbar-toggler {
     appearance: none;
     cursor: pointer;
     width: 3.5rem;
@@ -70,8 +70,8 @@
         line-height: 3rem;
         width: 100%;
     }
-
-.nav-item ::deep a.active {
+*/
+/*.nav-item ::deep a.active {
     background-color: rgba(255,255,255,0.37);
     color: white;
 }
@@ -94,12 +94,50 @@
         display: none;
     }
 
-    .nav-scrollable {
+    .nav-scrollable {*/
         /* Never collapse the sidebar for wide screens */
-        display: block;
+        /*display: block;*/
 
         /* Allow sidebar to scroll for tall menus */
-        height: calc(100vh - 3.5rem);
+        /*height: calc(100vh - 3.5rem);
         overflow-y: auto;
     }
+}*/
+
+
+nav {
+    display: flex;
+    gap: 50px;
+    font-size: 18px;
 }
+
+::deep a {
+    padding-bottom: 5px;
+}
+
+::deep a:hover {
+    font-weight: normal;
+}
+
+::deep a.active {
+    font-weight: bold;
+}
+
+
+::deep a {
+    display: inline-block;
+    text-decoration: none;
+}
+
+    ::deep a::after {
+        content: '';
+        display: block;
+        width: 0;
+        height: 2px;
+        background: var(--accent);
+        transition: width .3s;
+    }
+
+    ::deep a:not(.active):hover::after {
+        width: 100%;
+    }
