@@ -14,8 +14,8 @@ public static class IServiceCollectionExtensions
             options.DefaultRequestHeaders.Add("User-Agent", "DanbooruWrapper/0.0.1 Testing");
         });
 
-        services.AddSingleton<IPostsService, PostsService>();
-        services.AddSingleton<ITagsService, TagsService>();
-        services.AddSingleton<IDanbooruWrapper, DanbooruWrapper>();
+        services.AddScoped<IPostsService, PostsService>();
+        services.AddScoped<ITagsService, TagsService>();
+        services.AddScoped<IDanbooruWrapper, DanbooruWrapper>();
     }
 }

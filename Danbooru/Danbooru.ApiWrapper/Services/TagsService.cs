@@ -62,7 +62,15 @@ public class TagsService : BaseService, ITagsService
     {
         _logger.LogInformation("Trying to search after tags...");
         string uri = $"autocomplete.json?search%5Bquery%5D={searchQuery}&search%5Btype%5D=tag_query&limit=20";
-        var result = await GetFromApiAsync<List<TagAutocomplete>>(uri);
-        return result ?? new();
+        try
+        {
+            var result = await GetFromApiAsync<List<TagAutocomplete>>(uri);
+            return result ?? new();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Failed to get content from uri: {uri}", uri);
+            throw;
+        }
     }
 }

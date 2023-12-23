@@ -1,6 +1,7 @@
 ﻿@using Danbooru.ApiWrapper.Interfaces
 @using Danbooru.ApiWrapper.Models
-@rendermode InteractiveWebAssembly
+
+@rendermode InteractiveServer
 
 <section class="search-container">
     <form @onsubmit="HandleSearch" name="tag-form-searching">
@@ -74,15 +75,14 @@
 
     private async Task PerformSearchAsync()
     {
-        //SearchQuery = currentInputValue;
-
         if (String.IsNullOrEmpty(currentInputValue))
         {
-            //await GoToIndex();
             return;
         }
 
         _tags = await DanbooruWrapper.Tags.AutocompleteAfterTag(currentInputValue);
+
+        StateHasChanged();
     }
 
     public void Dispose()
