@@ -16,6 +16,10 @@
     --font-family-header: 'Comfortaa', sans-serif;
 }
 
+#components-reconnect-modal {
+    background-color: transparent !important;
+}
+
 /* ===== Scrollbar CSS ===== */
 /* Firefox */
 * {

@@ -1,0 +1,225 @@
+﻿@page "/doom-scroll"
+@rendermode InteractiveServer
+
+@using Danbooru.ApiWrapper.Enums
+@using Danbooru.ApiWrapper.Interfaces
+@using Danbooru.ApiWrapper.Models
+@using Sve.Blazor.InfiniteScroll.Components
+
+
+<section class="search-options-container">
+    <div class="rating-container">
+        <div class="option @(_contentRating == ContentRating.General ? "active" : String.Empty)" 
+            @onclick="() => HandleOnRadioButtonClick(ContentRating.General)">
+            <p>General</p>
+        </div>
+
+        <div class="option @(_contentRating == ContentRating.Sensitive ? "active" : String.Empty)" 
+            @onclick="() => HandleOnRadioButtonClick(ContentRating.Sensitive)">
+            <p>Sensitive</p>
+        </div>
+
+        <div class="option @(_contentRating == ContentRating.Questionable ? "active" : String.Empty)" 
+            @onclick="() => HandleOnRadioButtonClick(ContentRating.Questionable)">
+            <p>Questionable</p>
+        </div>
+
+        <div class="option @(_contentRating == ContentRating.Explicit ? "active" : String.Empty)" 
+            @onclick="() => HandleOnRadioButtonClick(ContentRating.Explicit)">
+            <p>Explicit</p>
+        </div>
+    </div>
+
+    <div class="input-section">
+
+        <input autocomplete="off" spellcheck="false" type="text" @bind-value="_searchQuery" name="search-after-tag" list="tags" @oninput="OnSearchInputChanged" />
+
+        <div class="auto-complete-suggestions">
+            @if (_tags is not null)
+            {
+                foreach (var tag in _tags)
+                {
+                    <div class="auto-complete-option" @onclick="() => HandleTagSelected(tag)">
+                        <p>@tag.Value</p>
+                    </div>
+                }
+            }
+        </div>
+
+    </div>
+
+    <div class="selected-tags-container">
+        @foreach (var tag in _selectedTags)
+        {
+            <div class="selected-tag">
+                <div>
+                    <p>@tag.Label (@tag.PostCount)</p>
+                </div>
+                <div @onclick="() => RemoveSelectedTag(tag)">
+                    <p>✖</p>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="button-container">
+        <button type="button" @onclick="HandleSearchButtonClicked">Search</button>
+    </div>
+</section>
+
+<section class="search-results-container">
+    <div class="results">
+        <InfiniteScroll ObserverTargetId="observerTarget" ObservableTargetReached="(e) => FetchImages()">
+            @foreach (var post in _posts)
+            {
+                <div class="media-result">
+                    @if (!post.IsImage)
+                    {
+                        <div class="meta-data">
+                            @{
+                                string duration = post.MediaAsset?.Duration?.ToString() ?? "0";
+                                double durationInTime = Convert.ToDouble(duration, System.Globalization.CultureInfo.InvariantCulture);
+                                double durationInTimeRounded = Math.Round(durationInTime, 2);
+                            }
+                            <p>@durationInTimeRounded seconds</p>
+                            <p>@post.FileExt</p>
+                        </div>
+
+                        @if(post.FileExt.Equals("mp4"))
+                        {
+                            <video controls="controls" src="@post.LargeFileUrl">
+                            </video>
+                        }
+                        else
+                        {
+                            <img style="background-image: url(@post.PreviewFileUrl);"
+                                 src="@post.PreviewFileUrl" />
+                        }
+                    }
+                    else
+                    {
+                        <img style="background-image: url(@post.PreviewFileUrl);"
+                             src="@post.LargeFileUrl" />
+                    }
+                </div>
+            }
+
+            @*The target element that we observe. Once this is reached the callback will be triggered.*@
+            <li class="list-group-item" id="observerTarget"></li>
+        </InfiniteScroll>
+    </div>
+</section>
+
+
+@code {
+    [Inject]
+    public IDanbooruWrapper DanbooruWrapper { get; set; }
+
+    [Inject]
+    public ILogger<DoomScroll> Logger { get; set; }
+
+    private List<Post> _posts = new();
+
+    private int _lastIdThatWasRetrieved = -1;
+
+    private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+    private const int _debouncePeriod = 250;
+    private string _currentInputValue;
+    private string _searchQuery;
+    private List<TagAutocomplete>? _tags;
+    private List<TagAutocomplete> _selectedTags = new();
+    private ContentRating? _contentRating;
+
+    private async Task RemoveSelectedTag(TagAutocomplete tag)
+    {
+        _selectedTags?.Remove(tag);
+    }
+
+    private async Task HandleOnRadioButtonClick(ContentRating contentRating)
+    {
+        if(_contentRating == contentRating)
+        {
+            _contentRating = null;
+            return;
+        }
+
+        _contentRating = contentRating;
+    }
+
+    private async Task HandleSearchButtonClicked()
+    {
+        _posts.Clear();
+        await FetchImages();
+    }
+
+    private async Task OnSearchInputChanged(ChangeEventArgs args)
+    {
+        string inputValue = args.Value?.ToString()?.Trim() ?? String.Empty;
+
+        if (String.IsNullOrEmpty(inputValue))
+        {
+            _tags?.Clear();
+            return;   
+        }
+
+        _currentInputValue = inputValue;
+
+        // If user started typing before we could process the previous request, then cancel that request.
+        _cancellationTokenSource.Cancel();
+        _cancellationTokenSource = new CancellationTokenSource();
+
+        try
+        {
+            await Task.Delay(_debouncePeriod, _cancellationTokenSource.Token);
+            await PerformSearchAsync();
+        }
+        catch(TaskCanceledException) { }
+    }
+
+    private async Task PerformSearchAsync()
+    {
+        if (String.IsNullOrEmpty(_currentInputValue))
+        {
+            return;
+        }
+
+        _tags = await DanbooruWrapper.Tags.AutocompleteAfterTag(_currentInputValue);
+    }
+
+    private void HandleTagSelected(TagAutocomplete selectedTag)
+    {
+        if (_selectedTags.Contains(selectedTag))
+        {
+            return;
+        }
+
+        _selectedTags.Add(selectedTag);
+        _tags?.Clear();
+
+        _searchQuery = String.Empty;
+
+        StateHasChanged();
+    }
+
+    public void Dispose() => _cancellationTokenSource?.Cancel();
+
+    /// <summary>
+    /// Yoink a bunch of images.
+    /// </summary>
+    /// <returns></returns>
+    private async Task FetchImages()
+    {
+        var posts = await DanbooruWrapper.Posts.PerformSearchAfterPostsAsync(_selectedTags, _contentRating, _lastIdThatWasRetrieved);
+
+        // Use LINQ to exclude posts that have an Id already present in the _posts list
+        var distinctPosts = posts.Where(p => !_posts.Any(existingPost => existingPost.Id == p.Id)).ToList();
+
+        // Add the distinct posts to the _posts list
+        _posts.AddRange(distinctPosts);
+
+        // Update the last id.
+        _lastIdThatWasRetrieved = _posts.Min(x => x.Id);
+
+        Logger.LogInformation("Found a total of {newUniquePostsFound} new posts, bringing the new total up to {newPostTotal}. The last id used was {lastIdUsed}", distinctPosts.Count, _posts.Count, _lastIdThatWasRetrieved);
+    }
+}

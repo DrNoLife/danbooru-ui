@@ -23,7 +23,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseWebAssemblyDebugging();
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    //app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
 else
 {
