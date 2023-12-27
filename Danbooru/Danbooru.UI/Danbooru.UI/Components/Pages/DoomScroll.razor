@@ -85,21 +85,13 @@
                             <p>@post.FileExt</p>
                         </div>
 
-                        @if(post.FileExt.Equals("mp4"))
-                        {
-                            <video controls="controls" src="@post.LargeFileUrl" loop="loop">
-                            </video>
-                        }
-                        else
-                        {
-                            <img style="background-image: url(@post.PreviewFileUrl);"
-                                 src="@post.PreviewFileUrl" />
-                        }
+                        <video controls="controls" src="@post.LargeFileUrl" loop="loop" poster="@post.PreviewFileUrl">
+
+                        </video>
                     }
                     else
                     {
-                        <img style="background-image: url(@post.PreviewFileUrl);"
-                             src="@post.LargeFileUrl" />
+                        <img style="background-image: url(@post.PreviewFileUrl);" src="@post.LargeFileUrl" />
                     }
                 </div>
             }
