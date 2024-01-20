@@ -9,10 +9,10 @@ namespace Danbooru.UI.Components.Pages;
 public partial class DoomScroll
 {
     [Inject]
-    public IDanbooruWrapper? DanbooruWrapper { get; set; }
+    public IDanbooruWrapper DanbooruWrapper { get; set; } = null!;
 
     [Inject]
-    public ILogger<DoomScroll>? Logger { get; set; }
+    public ILogger<DoomScroll> Logger { get; set; } = null!;
 
     private List<Post> _posts = new();
 
