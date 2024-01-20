@@ -67,7 +67,7 @@ public class TagsService : BaseService, ITagsService
             var result = await GetFromApiAsync<List<TagAutocomplete>>(uri);
             return result ?? new();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             _logger.LogError("Failed to get content from uri: {uri}", uri);
             throw;
