@@ -13,11 +13,8 @@ public class GallerySettingsService : IGallerySettingsService
     public GallerySettingsService(NavigationManager navigationManager)
     {
         _navigationManager = navigationManager;
-        LoadCurrentSettings();
-    }
 
-    private void LoadCurrentSettings()
-    {
+        // Load current settings.
         var uri = new Uri(_navigationManager.Uri);
         var query = QueryHelpers.ParseQuery(uri.Query);
 
@@ -25,8 +22,8 @@ public class GallerySettingsService : IGallerySettingsService
 
         if (query.Count > 0)
         {
-            _currentOptions.AspectRatio = query.TryGetValue("aspect-ratio", out var ar) ? ar : "0";
-            _currentOptions.DisplayType = query.TryGetValue("display", out var dp) ? dp : "gallery";
+            _currentOptions.AspectRatio = query.TryGetValue("aspect-ratio", out var ar) ? ar! : "0";
+            _currentOptions.DisplayType = query.TryGetValue("display", out var dp) ? dp! : "gallery";
             _currentOptions.ImageWidth = query.TryGetValue("image-width", out var iw) && int.TryParse(iw, out var width) ? width : 250;
         }
     }
@@ -43,7 +40,7 @@ public class GallerySettingsService : IGallerySettingsService
 
     public string GenerateQueryString()
     {
-        var queryParams = new Dictionary<string, string>
+        var queryParams = new Dictionary<string, string?>
         {
             { "aspect-ratio", _currentOptions.AspectRatio },
             { "display", _currentOptions.DisplayType },

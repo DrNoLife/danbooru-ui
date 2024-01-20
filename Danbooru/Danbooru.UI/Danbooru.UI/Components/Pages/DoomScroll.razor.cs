@@ -9,10 +9,10 @@ namespace Danbooru.UI.Components.Pages;
 public partial class DoomScroll
 {
     [Inject]
-    public IDanbooruWrapper DanbooruWrapper { get; set; }
+    public IDanbooruWrapper DanbooruWrapper { get; set; } = null!;
 
     [Inject]
-    public ILogger<DoomScroll> Logger { get; set; }
+    public ILogger<DoomScroll> Logger { get; set; } = null!;
 
     private List<Post> _posts = new();
 
@@ -29,11 +29,14 @@ public partial class DoomScroll
     private void RemoveSelectedTag(TagAutocomplete tag)
     {
         Logger.LogDebug("Removing selected tag.");
+
         _selectedTags?.Remove(tag);
     }
 
     private void HandleOnRadioButtonClick(ContentRating contentRating)
     {
+        Logger.LogDebug("Changing the selected content rating.");
+
         if (_contentRating == contentRating)
         {
             _contentRating = null;
@@ -45,6 +48,8 @@ public partial class DoomScroll
 
     private async Task HandleSearchButtonClicked()
     {
+        Logger.LogDebug("Search button has been pressed.");
+
         _posts.Clear();
         await FetchImages();
     }
