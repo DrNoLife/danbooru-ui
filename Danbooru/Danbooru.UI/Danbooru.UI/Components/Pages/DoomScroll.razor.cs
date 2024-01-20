@@ -20,18 +20,19 @@ public partial class DoomScroll
 
     private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
     private const int _debouncePeriod = 250;
-    private string _currentInputValue;
-    private string _searchQuery;
+    private string _currentInputValue = String.Empty;
+    private string _searchQuery = String.Empty;
     private List<TagAutocomplete>? _tags;
     private List<TagAutocomplete> _selectedTags = new();
     private ContentRating? _contentRating;
 
-    private async Task RemoveSelectedTag(TagAutocomplete tag)
+    private void RemoveSelectedTag(TagAutocomplete tag)
     {
+        Logger.LogDebug("Removing selected tag.");
         _selectedTags?.Remove(tag);
     }
 
-    private async Task HandleOnRadioButtonClick(ContentRating contentRating)
+    private void HandleOnRadioButtonClick(ContentRating contentRating)
     {
         if (_contentRating == contentRating)
         {
