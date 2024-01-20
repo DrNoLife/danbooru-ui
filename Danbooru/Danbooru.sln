@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Danbooru.UI.Client", "Danbo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Danbooru.ApiWrapper.Tests", "Danbooru.ApiWrapper.Tests\Danbooru.ApiWrapper.Tests.csproj", "{F2E2AD9B-DC42-4480-B219-37BFD45B42A9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Danbooru.UI.Tests", "Danbooru.UI.Tests\Danbooru.UI.Tests.csproj", "{3AB1B83B-053A-4AF1-AD0A-EDE816F66144}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{F2E2AD9B-DC42-4480-B219-37BFD45B42A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F2E2AD9B-DC42-4480-B219-37BFD45B42A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F2E2AD9B-DC42-4480-B219-37BFD45B42A9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3AB1B83B-053A-4AF1-AD0A-EDE816F66144}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3AB1B83B-053A-4AF1-AD0A-EDE816F66144}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3AB1B83B-053A-4AF1-AD0A-EDE816F66144}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3AB1B83B-053A-4AF1-AD0A-EDE816F66144}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
