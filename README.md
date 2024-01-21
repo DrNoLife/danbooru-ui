@@ -1,5 +1,7 @@
 # danbooru-ui
 
+![CI](https://github.com/drnolife/danbooru-ui/actions/workflows/dotnet.yml/badge.svg)
+
 ## Overview
 "danbooru-ui" is an alternative frontend for the popular image board [Danbooru](https://danbooru.donmai.us/). Designed with aesthetics in mind, it aims to provide a more visually appealing user interface for browsing images. The project focuses primarily on image viewing, sidelining community features like forums, at least in its current state.
 
