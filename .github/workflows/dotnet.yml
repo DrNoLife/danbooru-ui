@@ -32,7 +32,7 @@ jobs:
         with:
           dotnet-version: 8.0.x
       - name: Test
-        run: dotnet test --no-build --verbosity normal
+        run: dotnet test Danbooru.sln --verbosity detailed
         working-directory: Danbooru
 
   deploy:
