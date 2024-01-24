@@ -17,8 +17,7 @@ WORKDIR "/src/Danbooru.UI/Danbooru.UI"
 RUN dotnet build "./Danbooru.UI.csproj" -o /app/build
 
 FROM build AS publish
-#RUN dotnet publish "./Danbooru.UI.csproj" -o /app/publish /p:UseAppHost=false
-RUN dotnet publish "./Danbooru.UI.csproj" -c Release -o /app/publish -r linux-x64 /p:PublishTrimmed=true /p:UseAppHost=true
+RUN dotnet publish "./Danbooru.UI.csproj" -o /app/publish /p:UseAppHost=false
 
 
 FROM base AS final
