@@ -52,7 +52,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
-          context: .  # Or './Danbooru' if your Dockerfile is inside the Danbooru directory
+          context: ./Danbooru  # Or './Danbooru' if your Dockerfile is inside the Danbooru directory
           file: ./Danbooru/Danbooru.UI/Danbooru.UI/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/danbooruui:latest
