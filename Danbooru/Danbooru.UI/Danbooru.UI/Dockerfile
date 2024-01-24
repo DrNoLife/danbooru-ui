@@ -1,6 +1,6 @@
 #See https://aka.ms/customizecontainer for customizing your debug container and how Visual Studio uses this Dockerfile for faster debugging.
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-jammy-chiseled AS base
 USER app
 WORKDIR /app
 EXPOSE 8080
