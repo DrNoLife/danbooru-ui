@@ -16,6 +16,7 @@ builder.Services.AddRazorComponents(options => options.DetailedErrors = true)
 builder.Services.AddDanbooruWrapper();
 
 builder.Services.AddScoped<IGallerySettingsService, GallerySettingsService>();
+builder.Services.AddScoped<IDoomScrollService, DoomScrollService>();
 
 var app = builder.Build();
 

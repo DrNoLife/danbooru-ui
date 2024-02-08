@@ -70,34 +70,19 @@
 <section class="search-results-container">
     <div class="results">
         <InfiniteScroll ObserverTargetId="observerTarget" ObservableTargetReached="(e) => FetchImages()">
-            @foreach (var post in _posts)
+            
+            @foreach (Post post in _posts)
             {
-                <div class="media-result">
-                    @if (!post.IsImage)
-                    {
-                        <div class="meta-data">
-                            @{
-                                string duration = post.MediaAsset?.Duration?.ToString() ?? "0";
-                                double durationInTime = Convert.ToDouble(duration, System.Globalization.CultureInfo.InvariantCulture);
-                                double durationInTimeRounded = Math.Round(durationInTime, 2);
-                            }
-                            <p>@durationInTimeRounded seconds</p>
-                            <p>@post.FileExt</p>
-                        </div>
-
-                        <video controls="controls" src="@post.LargeFileUrl" loop="loop" poster="@post.PreviewFileUrl">
-
-                        </video>
-                    }
-                    else
-                    {
-                        <img style="background-image: url(@post.PreviewFileUrl);" src="@post.LargeFileUrl" />
-                    }
-                </div>
+                <MediaComponent MediaPost="post" />
             }
 
             @* The target element that we observe. Once this is reached the callback will be triggered. *@
             <li class="list-group-item" id="observerTarget"></li>
         </InfiniteScroll>
+
+        @if(_shouldDisplayTagContainer)
+        {
+            <TagContainerComponent />
+        }
     </div>
 </section>
