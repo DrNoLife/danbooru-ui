@@ -1,11 +1,12 @@
-version: '3.8'  # Use a suitable version for Docker Compose
+version: '3.8'
 
 services:
   danbooru:
-    build:
-      context: .
-      dockerfile: ./Danbooru.UI/Danbooru.UI/Dockerfile
+    image: thorchr96/danbooruui:latest
+    #build:
+    #  context: .
+    #  dockerfile: ./Danbooru.UI/Danbooru.UI/Dockerfile
     ports:
-      - "10100:8080"  # Map host port 10100 to container port 8080
-      - "10101:8081"  # Map host port 10101 to container port 8081
+      - "10100:8080" 
+      - "10101:8081" 
     restart: unless-stopped
