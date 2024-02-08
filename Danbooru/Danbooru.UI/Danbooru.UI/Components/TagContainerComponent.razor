@@ -1,0 +1,60 @@
+﻿@using Danbooru.UI.Interfaces
+
+<div class="tag-container-wrapper">
+
+    <div class="top">
+        <div>Tags</div>
+        <div class="close-tags-button" @onclick=CloseTagsContainer>
+            <p>❌</p>
+        </div>
+    </div>
+
+    <div class="tag-container">
+
+        <section class="tag-section">
+            <div class="tag-title-container">
+                <p>Character</p>
+            </div>
+            <div class="tags">
+                @foreach (var tag in DoomScrollService.PostOfInterest!.TagsCharacter)
+                {
+                    <p><a href="/search/@tag">@tag</a></p>
+                }
+            </div>
+        </section>
+
+        <section class="tag-section">
+            <div class="tag-title-container">
+                <p>General</p>
+            </div>
+            <div class="tags">
+                @foreach (var tag in DoomScrollService.PostOfInterest!.TagsGeneral)
+                {
+                    <p><a href="/search/@tag">@tag</a></p>
+                }
+            </div>
+        </section>
+
+    </div>
+
+</div>
+
+@code {
+    [Inject]
+    public IDoomScrollService DoomScrollService { get; set; } = null!;
+
+    protected override void OnInitialized()
+    {
+        DoomScrollService.TagContainerToggled += HandleTagContainerToggled;
+    }
+
+    private void HandleTagContainerToggled(object? sender, EventArgs args)
+    {
+        StateHasChanged();
+    }
+
+    private void CloseTagsContainer(MouseEventArgs args)
+    {
+        DoomScrollService.ToggleTagDisplay(null);
+    }
+}
