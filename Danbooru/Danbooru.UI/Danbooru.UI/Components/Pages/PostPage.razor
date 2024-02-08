@@ -151,7 +151,7 @@
     public int Id { get; set; }
 
     [Inject]
-    public IDanbooruWrapper DanbooruWrapper { get; set; }
+    public IDanbooruWrapper DanbooruWrapper { get; set; } = null!;
 
     private Post? _post;
 
