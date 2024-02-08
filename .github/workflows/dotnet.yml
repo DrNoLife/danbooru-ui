@@ -63,3 +63,4 @@ jobs:
           file: ./Danbooru/Danbooru.UI/Danbooru.UI/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/danbooruui:latest
+          platforms: linux/arm64  # Specify the target platform here
