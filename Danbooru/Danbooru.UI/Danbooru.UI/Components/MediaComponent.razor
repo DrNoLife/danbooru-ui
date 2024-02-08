@@ -1,0 +1,79 @@
+﻿@using Danbooru.ApiWrapper.Models
+@using Danbooru.UI.Interfaces
+
+<div class="media-result @(DoomScrollService.PostOfInterest?.Id == MediaPost.Id ? "focused-post" : String.Empty)">
+    @if (!MediaPost.IsImage)
+    {
+        <div class="meta-data">
+            @{
+                string duration = MediaPost.MediaAsset?.Duration?.ToString() ?? "0";
+                double durationInTime = Convert.ToDouble(duration, System.Globalization.CultureInfo.InvariantCulture);
+                double durationInTimeRounded = Math.Round(durationInTime, 2);
+            }
+            <p>@durationInTimeRounded seconds</p>
+            <p>@MediaPost.FileExt</p>
+        </div>
+
+        <video 
+            controls="controls"
+            src="@_mediaUrl"
+            loop="loop" 
+            poster="@MediaPost.PreviewFileUrl">
+        </video>
+    }
+    else
+    {
+        <img 
+            style="background-image: url(@MediaPost.PreviewFileUrl);"
+            src="@_mediaUrl"
+            alt="@(MediaPost.TagsCharacter.Count > 0 ? MediaPost.TagsCharacter.First() : "Image!")" />
+    }
+
+    <div class="tag-display-toggle-container" @onclick=ToggleTagDisplay>
+        <p>?</p>
+    </div>
+</div>
+
+@code {
+    [Inject]
+    public IDoomScrollService DoomScrollService { get; set; } = null!;
+
+    [Parameter]
+    public Post MediaPost { get; set; } = null!;
+
+    private string _mediaUrl = String.Empty;
+
+    protected override void OnInitialized()
+    {
+        GetMediaUrl();
+    }
+
+    private void GetMediaUrl()
+    {
+        string largeFileUrl = MediaPost.LargeFileUrl;
+        if (!String.IsNullOrEmpty(largeFileUrl))
+        {
+            _mediaUrl = largeFileUrl;
+            return;
+        }
+
+        string fileUrl = MediaPost.FileUrl;
+        if (!String.IsNullOrEmpty(fileUrl))
+        {
+            _mediaUrl = fileUrl;
+            return;
+        }
+
+        string previewUrl = MediaPost.PreviewFileUrl;
+        if (!String.IsNullOrEmpty(previewUrl))
+        {
+            _mediaUrl = previewUrl;
+            return;
+        }
+    }
+
+    private void ToggleTagDisplay(MouseEventArgs e)
+    {
+        DoomScrollService.ToggleTagDisplay(MediaPost);
+    }
+}

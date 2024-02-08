@@ -1,0 +1,40 @@
+﻿* {
+    user-select: none;
+}
+
+.tag-container-wrapper {
+    position: sticky;
+    background-color: #000000b8;
+    width: 100%;
+    bottom: 0;
+    padding: 15px;
+    height: 50vh;
+    overflow-y: scroll;
+    backdrop-filter: blur(3px);
+    box-sizing: border-box;
+}
+
+.tag-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.tags {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    align-items: center;
+    font-weight: bold;
+}
+
+.close-tags-button p {
+    padding: 15px;
+    cursor: pointer;
+}

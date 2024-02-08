@@ -10,25 +10,7 @@
     gap: 25px;
 }
 
-.media-result {
-    position: relative;
-}
 
-.media-result img,
-.media-result video {
-    max-width: 100%;
-    width: 100%;
-}
-
-.meta-data {
-    position: absolute;
-    top: 0;
-    right: 0;
-    display: flex;
-    gap: 10px;
-    padding: 5px;
-    background-color: rgba(0, 0, 0, 0.75);
-}
 
 .search-options-container {
     padding: 10px 20px;

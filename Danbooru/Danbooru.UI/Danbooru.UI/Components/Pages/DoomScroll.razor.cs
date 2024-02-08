@@ -1,6 +1,7 @@
 ﻿using Danbooru.ApiWrapper.Enums;
 using Danbooru.ApiWrapper.Interfaces;
 using Danbooru.ApiWrapper.Models;
+using Danbooru.UI.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 
@@ -14,9 +15,13 @@ public partial class DoomScroll
     [Inject]
     public ILogger<DoomScroll> Logger { get; set; } = null!;
 
+    [Inject]
+    public IDoomScrollService DoomScrollService { get; set; } = null!;
+
     private List<Post> _posts = new();
 
     private int _lastIdThatWasRetrieved = -1;
+    private bool _shouldDisplayTagContainer;
 
     private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
     private const int _debouncePeriod = 250;
@@ -25,6 +30,17 @@ public partial class DoomScroll
     private List<TagAutocomplete>? _tags;
     private List<TagAutocomplete> _selectedTags = new();
     private ContentRating? _contentRating;
+
+    protected override void OnInitialized()
+    {
+        DoomScrollService.TagContainerToggled += HandleTagContainerToggled;
+    }
+
+    private void HandleTagContainerToggled(object? sender, EventArgs e)
+    {
+        _shouldDisplayTagContainer = DoomScrollService.DisplayTagContainer;
+        StateHasChanged();
+    }
 
     private void RemoveSelectedTag(TagAutocomplete tag)
     {
