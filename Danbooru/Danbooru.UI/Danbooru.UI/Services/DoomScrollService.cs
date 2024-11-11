@@ -13,7 +13,7 @@ public class DoomScrollService : IDoomScrollService
 
     public void ToggleTagDisplay(Post? post)
     {
-        if(post is null || PostOfInterest?.Id == post.Id)
+        if (post is null || PostOfInterest?.Id == post.Id)
         {
             PostOfInterest = null;
             DisplayTagContainer = false;

@@ -17,6 +17,7 @@ builder.Services.AddDanbooruWrapper();
 
 builder.Services.AddScoped<IGallerySettingsService, GallerySettingsService>();
 builder.Services.AddScoped<IDoomScrollService, DoomScrollService>();
+builder.Services.AddScoped<IMediaDownloaderService, MediaDownloaderService>();
 
 var app = builder.Build();
 

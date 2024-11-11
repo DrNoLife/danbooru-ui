@@ -9,26 +9,22 @@ namespace Danbooru.UI.Components.Pages;
 
 public partial class DoomScroll
 {
-    [Inject]
-    public IDanbooruWrapper DanbooruWrapper { get; set; } = null!;
+    [Inject] public required IDanbooruWrapper DanbooruWrapper { get; set; }
+    [Inject] public required ILogger<DoomScroll> Logger { get; set; }
+    [Inject] public required IDoomScrollService DoomScrollService { get; set; }
+    [Inject] public required IMediaDownloaderService MediaDownloaderService { get; set; }
 
-    [Inject]
-    public ILogger<DoomScroll> Logger { get; set; } = null!;
-
-    [Inject]
-    public IDoomScrollService DoomScrollService { get; set; } = null!;
-
-    private List<Post> _posts = new();
+    private List<Post> _posts = [];
 
     private int _lastIdThatWasRetrieved = -1;
     private bool _shouldDisplayTagContainer;
 
-    private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+    private CancellationTokenSource _cancellationTokenSource = new();
     private const int _debouncePeriod = 250;
     private string _currentInputValue = String.Empty;
     private string _searchQuery = String.Empty;
     private List<TagAutocomplete>? _tags;
-    private List<TagAutocomplete> _selectedTags = new();
+    private List<TagAutocomplete> _selectedTags = [];
     private ContentRating? _contentRating;
 
     protected override void OnInitialized()
@@ -132,12 +128,22 @@ public partial class DoomScroll
         // Use LINQ to exclude posts that have an Id already present in the _posts list
         var distinctPosts = posts.Where(p => !_posts.Any(existingPost => existingPost.Id == p.Id)).ToList();
 
+        if (distinctPosts.Count == 0)
+        {
+            // No new posts found
+            return;
+        }
+
         // Add the distinct posts to the _posts list
         _posts.AddRange(distinctPosts);
 
         // Update the last id.
         _lastIdThatWasRetrieved = _posts.Min(x => x.Id);
 
+        // Use the media downloader service to download media
+        await MediaDownloaderService.DownloadMediaAsync(distinctPosts, _selectedTags, _contentRating);
+
         Logger.LogInformation("Found a total of {newUniquePostsFound} new posts, bringing the new total up to {newPostTotal}. The last id used was {lastIdUsed}", distinctPosts.Count, _posts.Count, _lastIdThatWasRetrieved);
     }
+
 }

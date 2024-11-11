@@ -20,6 +20,24 @@
     <GalleryOptions />
 </section>
 
+<section class="pagination-container">
+    @for (int i = _paginationMinPageNumber; i <= _paginationMaxPageNumber; i++)
+    {
+        var url = String.IsNullOrEmpty(SearchTerm) ? $"/Page/{i}" : $"/Search/{SearchTerm}/Page/{i}";
+
+        url += GallerySettingsService.GenerateQueryString();
+
+        if (i == _internalPageNumber)
+        {
+            <a class="active-page" href="@url">@i</a>
+        }
+        else
+        {
+            <a href="@url">@i</a>
+        }
+    }
+</section>
+
 <section class="gallery @(_options.IsDisplayTypeCard ? "card" : String.Empty)" style="grid-template-columns: repeat(auto-fill, minmax(@(_options.ImageWidth)px, 1fr));">
 
     @foreach (var post in _posts)
