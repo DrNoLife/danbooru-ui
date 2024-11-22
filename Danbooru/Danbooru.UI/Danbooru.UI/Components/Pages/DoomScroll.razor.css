@@ -106,6 +106,12 @@ input[type="text"] {
     cursor: pointer;
 }
 
+.end-reacher {
+    padding: 2rem;
+    background-color: darkorange;
+    border-radius: .75rem;
+}
+
 @media (max-width: 1200px) {
     .results {
         width: 100%;
