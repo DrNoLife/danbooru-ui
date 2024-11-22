@@ -18,7 +18,7 @@ public class PostsService : BaseService, IPostsService
 
         string uri = "posts.json";
         var result = await GetFromApiAsync<List<Post>>(uri);
-        return result ?? new();
+        return result ?? [];
     }
 
     public async Task<List<Post>> GetPostsAsync(UrlParameters parameters)
@@ -27,7 +27,7 @@ public class PostsService : BaseService, IPostsService
 
         string uri = "posts.json" + parameters.ToString();
         var result = await GetFromApiAsync<List<Post>>(uri);
-        return result ?? new();
+        return result ?? [];
     }
 
     public async Task<List<Post>> GetPostsByIdAsync(int postId, int postsToGet)
@@ -36,15 +36,15 @@ public class PostsService : BaseService, IPostsService
 
         string uri = $"posts.json?page=b{postId}&limit={postsToGet}";
         var result = await GetFromApiAsync<List<Post>>(uri);
-        return result ?? new();
+        return result ?? [];
     }
 
     public async Task<List<Post>> GetPostsByTagAsync(string tag)
     {
-        List<string> tags = new()
-        {
+        List<string> tags =
+        [
             tag
-        };
+        ];
 
         var result = await GetPostsByTagsAsync(tags);
         return result;
@@ -52,10 +52,10 @@ public class PostsService : BaseService, IPostsService
 
     public async Task<List<Post>> GetPostsByTagAsync(string tag, UrlParameters parameters)
     {
-        List<string> tags = new()
-        {
+        List<string> tags =
+        [
             tag
-        };
+        ];
 
         var result = await GetPostsByTagsAsync(tags, parameters);
         return result;
@@ -68,7 +68,7 @@ public class PostsService : BaseService, IPostsService
 
         string uri = $"posts.json?tags={tagStringEscaped}";
         var result = await GetFromApiAsync<List<Post>>(uri);
-        return result ?? new();
+        return result ?? [];
     }
 
     public async Task<List<Post>> GetPostsByTagsAsync(IEnumerable<string> tags, UrlParameters parameters)
@@ -76,9 +76,9 @@ public class PostsService : BaseService, IPostsService
         string tagStringConcatenated = String.Join('+', tags);
         string tagStringEscaped = UrlHelper.TransformTagStringToUrlFormat(tagStringConcatenated);
 
-        string uri = $"posts.json{parameters.ToString()}&tags={tagStringEscaped}";
+        string uri = $"posts.json{parameters}&tags={tagStringEscaped}";
         var result = await GetFromApiAsync<List<Post>>(uri);
-        return result ?? new();
+        return result ?? [];
     }
 
     public async Task<Post> GetPostByIdAsync(int id)
@@ -109,12 +109,11 @@ public class PostsService : BaseService, IPostsService
         var tagsToUseEscaped = UrlHelper.TransformTagStringToUrlFormat(tagsToUseConcatenated);
         string uri = $"posts.json?page=b{lastPostId}&tags={tagsToUseEscaped}";
 
-        
+        List<Post> result = await GetFromApiAsync<List<Post>>(uri) ?? [];
 
-        // Perform search.
-        List<Post> result = await GetFromApiAsync<List<Post>>(uri) ?? new List<Post>();
-
-        // If we have more than 20 posts, take only the first 20
-        return result.Take(postsToGet).ToList();
+        return result
+            .Where(x => !String.IsNullOrEmpty(x.PreviewFileUrl))
+            .Take(postsToGet)
+            .ToList();
     }
 }

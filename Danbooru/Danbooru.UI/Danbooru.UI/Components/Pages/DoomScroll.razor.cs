@@ -125,22 +125,19 @@ public partial class DoomScroll
     {
         var posts = await DanbooruWrapper.Posts.PerformSearchAfterPostsAsync(_selectedTags, _contentRating, _lastIdThatWasRetrieved);
 
-        // Use LINQ to exclude posts that have an Id already present in the _posts list
         var distinctPosts = posts.Where(p => !_posts.Any(existingPost => existingPost.Id == p.Id)).ToList();
 
         if (distinctPosts.Count == 0)
         {
-            // No new posts found
+            Logger.LogInformation("Found no more new posts!");
             return;
         }
 
-        // Add the distinct posts to the _posts list
         _posts.AddRange(distinctPosts);
 
-        // Update the last id.
         _lastIdThatWasRetrieved = _posts.Min(x => x.Id);
 
-        // Use the media downloader service to download media
+        // Use the media downloader service to download media.
         await MediaDownloaderService.DownloadMediaAsync(distinctPosts, _selectedTags, _contentRating);
 
         Logger.LogInformation("Found a total of {newUniquePostsFound} new posts, bringing the new total up to {newPostTotal}. The last id used was {lastIdUsed}", distinctPosts.Count, _posts.Count, _lastIdThatWasRetrieved);
