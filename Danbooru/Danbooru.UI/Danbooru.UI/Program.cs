@@ -6,6 +6,8 @@ using Danbooru.UI.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults();
+
 builder.Configuration.AddEnvironmentVariables();
 
 // Add services to the container.
@@ -22,6 +24,8 @@ builder.Services.AddScoped<IDoomScrollService, DoomScrollService>();
 builder.Services.AddScoped<IMediaDownloaderService, MediaDownloaderService>();
 
 var app = builder.Build();
+
+app.MapDefaultEndpoints();
 
 app.UseExceptionHandler("/Error", createScopeForErrors: true);
 app.UseHsts();

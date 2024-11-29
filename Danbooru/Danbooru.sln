@@ -11,6 +11,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Danbooru.ApiWrapper.Tests",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Danbooru.UI.Tests", "Danbooru.UI.Tests\Danbooru.UI.Tests.csproj", "{3AB1B83B-053A-4AF1-AD0A-EDE816F66144}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Danbooru.AppHost", "Danbooru.AppHost\Danbooru.AppHost.csproj", "{2AADA6A2-C3FD-4B0B-9F27-BCAA13514494}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Danbooru.ServiceDefaults", "Danbooru.ServiceDefaults\Danbooru.ServiceDefaults.csproj", "{C347B38E-6E0E-4387-FE0D-DD3AB8257C97}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +37,14 @@ Global
 		{3AB1B83B-053A-4AF1-AD0A-EDE816F66144}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3AB1B83B-053A-4AF1-AD0A-EDE816F66144}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3AB1B83B-053A-4AF1-AD0A-EDE816F66144}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2AADA6A2-C3FD-4B0B-9F27-BCAA13514494}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2AADA6A2-C3FD-4B0B-9F27-BCAA13514494}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2AADA6A2-C3FD-4B0B-9F27-BCAA13514494}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2AADA6A2-C3FD-4B0B-9F27-BCAA13514494}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C347B38E-6E0E-4387-FE0D-DD3AB8257C97}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C347B38E-6E0E-4387-FE0D-DD3AB8257C97}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C347B38E-6E0E-4387-FE0D-DD3AB8257C97}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C347B38E-6E0E-4387-FE0D-DD3AB8257C97}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
