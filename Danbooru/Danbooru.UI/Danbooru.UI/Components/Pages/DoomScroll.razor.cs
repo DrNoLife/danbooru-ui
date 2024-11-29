@@ -2,17 +2,25 @@
 using Danbooru.ApiWrapper.Interfaces;
 using Danbooru.ApiWrapper.Models;
 using Danbooru.UI.Interfaces;
+using Danbooru.UI.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Danbooru.UI.Components.Pages;
 
-public partial class DoomScroll
+public partial class DoomScroll(
+    IDanbooruWrapper danbooruWrapper,
+    ILogger<DoomScroll> logger,
+    IDoomScrollService doomScrollService,
+    IMediaDownloaderService mediaDownloaderService,
+    IOptions<DanbooruSettings> settings)
 {
-    [Inject] public required IDanbooruWrapper DanbooruWrapper { get; set; }
-    [Inject] public required ILogger<DoomScroll> Logger { get; set; }
-    [Inject] public required IDoomScrollService DoomScrollService { get; set; }
-    [Inject] public required IMediaDownloaderService MediaDownloaderService { get; set; }
+    private readonly IDanbooruWrapper _danbooruWrapper = danbooruWrapper;
+    private readonly ILogger<DoomScroll> _logger = logger;
+    private readonly IDoomScrollService _doomScrollService = doomScrollService;
+    private readonly IMediaDownloaderService _mediaDownloaderService = mediaDownloaderService;
+    private readonly DanbooruSettings _settings = settings.Value;
 
     private List<Post> _posts = [];
 
@@ -29,25 +37,25 @@ public partial class DoomScroll
 
     protected override void OnInitialized()
     {
-        DoomScrollService.TagContainerToggled += HandleTagContainerToggled;
+        _doomScrollService.TagContainerToggled += HandleTagContainerToggled;
     }
 
     private void HandleTagContainerToggled(object? sender, EventArgs e)
     {
-        _shouldDisplayTagContainer = DoomScrollService.DisplayTagContainer;
+        _shouldDisplayTagContainer = _doomScrollService.DisplayTagContainer;
         StateHasChanged();
     }
 
     private void RemoveSelectedTag(TagAutocomplete tag)
     {
-        Logger.LogDebug("Removing selected tag.");
+        _logger.LogDebug("Removing selected tag.");
 
         _selectedTags?.Remove(tag);
     }
 
     private void HandleOnRadioButtonClick(ContentRating contentRating)
     {
-        Logger.LogDebug("Changing the selected content rating.");
+        _logger.LogDebug("Changing the selected content rating.");
 
         if (_contentRating == contentRating)
         {
@@ -60,7 +68,7 @@ public partial class DoomScroll
 
     private async Task HandleSearchButtonClicked()
     {
-        Logger.LogDebug("Search button has been pressed.");
+        _logger.LogDebug("Search button has been pressed.");
 
         _posts.Clear();
         await FetchImages();
@@ -97,7 +105,7 @@ public partial class DoomScroll
             return;
         }
 
-        _tags = await DanbooruWrapper.Tags.AutocompleteAfterTag(_currentInputValue);
+        _tags = await _danbooruWrapper.Tags.AutocompleteAfterTag(_currentInputValue);
     }
 
     private void HandleTagSelected(TagAutocomplete selectedTag)
@@ -123,13 +131,13 @@ public partial class DoomScroll
     /// <returns></returns>
     private async Task FetchImages()
     {
-        var posts = await DanbooruWrapper.Posts.PerformSearchAfterPostsAsync(_selectedTags, _contentRating, _lastIdThatWasRetrieved);
+        var posts = await _danbooruWrapper.Posts.PerformSearchAfterPostsAsync(_selectedTags, _contentRating, _lastIdThatWasRetrieved);
 
         var distinctPosts = posts.Where(p => !_posts.Any(existingPost => existingPost.Id == p.Id)).ToList();
 
         if (distinctPosts.Count == 0)
         {
-            Logger.LogInformation("Found no more new posts!");
+            _logger.LogInformation("Found no more new posts!");
             return;
         }
 
@@ -137,10 +145,13 @@ public partial class DoomScroll
 
         _lastIdThatWasRetrieved = _posts.Min(x => x.Id);
 
-        // Use the media downloader service to download media.
-        await MediaDownloaderService.DownloadMediaAsync(distinctPosts, _selectedTags, _contentRating);
+        if (_settings.AutoDownloadDoomscrollImages)
+        {
+            // Use the media downloader service to download media.
+            await _mediaDownloaderService.DownloadMediaAsync(distinctPosts, _selectedTags, _contentRating);
+        }
 
-        Logger.LogInformation("Found a total of {newUniquePostsFound} new posts, bringing the new total up to {newPostTotal}. The last id used was {lastIdUsed}", distinctPosts.Count, _posts.Count, _lastIdThatWasRetrieved);
+        _logger.LogInformation("Found a total of {newUniquePostsFound} new posts, bringing the new total up to {newPostTotal}. The last id used was {lastIdUsed}", distinctPosts.Count, _posts.Count, _lastIdThatWasRetrieved);
     }
 
 }

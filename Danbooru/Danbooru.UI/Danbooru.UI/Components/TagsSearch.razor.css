@@ -20,10 +20,20 @@ input, button {
     background-color: var(--secondary);
     border: 1px solid var(--accent);
 }
+
+input {
+    border-top-left-radius: .5rem;
+    border-bottom-left-radius: .5rem;
+}
+
+
 button {
     padding: 10px 20px;
     cursor: pointer;
     transition: 150ms all ease-in-out;
+    border-left: none;
+    border-top-right-radius: .5rem;
+    border-bottom-right-radius: .5rem;
 }
 button:hover {
     background-color: var(--primary);
