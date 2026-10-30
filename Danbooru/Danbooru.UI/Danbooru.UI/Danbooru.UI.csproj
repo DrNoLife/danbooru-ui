@@ -4,6 +4,9 @@
     <UserSecretsId>7e6bf725-58cd-48bd-bb2a-5226ff300a05</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>..\..</DockerfileContext>
+    <!-- blazor.web.js ships in a package the SDK only adds when it sees .razor files at restore time. The Dockerfile
+         restores from the project file alone, so without this the image has no blazor.web.js and nothing is interactive. -->
+    <RequiresAspNetWebAssets>true</RequiresAspNetWebAssets>
   </PropertyGroup>
 
   <ItemGroup>
