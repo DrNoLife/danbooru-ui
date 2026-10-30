@@ -21,8 +21,8 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
-  build-and-test:
-    name: Build and test
+  # Keep the job named "build": branch protection on main requires a check with that name.
+  build:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -58,7 +58,7 @@ jobs:
 
   docker:
     name: Docker image
-    needs: build-and-test
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
