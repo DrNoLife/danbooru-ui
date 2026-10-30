@@ -187,20 +187,75 @@ export function preloadImages(urls) {
     }
 }
 
-// Plays feed videos (muted) while they fill most of the screen and pauses them when scrolled away.
-// Watches for slides added later by infinite scrolling.
+// Whether feed videos play muted. Remembered for the browser session, so unmuting one video unmutes the next ones.
+const feedMutedKey = 'imeji-feed-muted';
+
+function isFeedMuted() {
+    try {
+        return sessionStorage.getItem(feedMutedKey) !== 'false';
+    } catch {
+        return true;
+    }
+}
+
+function setFeedMuted(muted) {
+    try {
+        sessionStorage.setItem(feedMutedKey, String(muted));
+    } catch {
+        // Not remembered; videos just start muted again.
+    }
+}
+
+// Sets muted ourselves and notes it, so the volumechange it causes is not mistaken for the user's choice.
+function applyMuted(video, muted) {
+    video.dataset.expectedMuted = String(muted);
+    video.muted = muted;
+}
+
+// Plays feed videos while they fill most of the screen and pauses them when scrolled away. They play muted
+// until the user unmutes one (see isFeedMuted). They start without controls so nothing covers the video;
+// a tap shows the player controls, and scrolling away hides them again. Watches for slides added later.
 export function autoplayVideos() {
     const visibility = new IntersectionObserver((entries) => {
         for (const entry of entries) {
             const video = entry.target;
             if (entry.isIntersecting) {
-                video.muted = true;
-                video.play().catch(() => { /* Autoplay blocked; the controls still work. */ });
+                applyMuted(video, isFeedMuted());
+                video.play().catch(() => {
+                    // Browsers may refuse to start sound without a tap; play muted instead, keeping the preference.
+                    applyMuted(video, true);
+                    video.play().catch(() => { /* Autoplay blocked entirely; a tap still plays it. */ });
+                });
             } else {
                 video.pause();
+                video.controls = false;
             }
         }
     }, { threshold: 0.6 });
+
+    const onClick = (event) => {
+        const video = event.target instanceof Element ? event.target.closest('.feed-slide video') : null;
+        if (video && !video.controls) {
+            video.controls = true;
+        }
+    };
+
+    // Only a change the user made (through the player controls) updates the remembered setting.
+    const onVolumeChange = (event) => {
+        const video = event.target;
+        if (!(video instanceof HTMLVideoElement) || !video.closest('.feed-slide')) {
+            return;
+        }
+
+        if (String(video.muted) !== video.dataset.expectedMuted) {
+            setFeedMuted(video.muted);
+        }
+
+        video.dataset.expectedMuted = String(video.muted);
+    };
+
+    document.addEventListener('click', onClick);
+    document.addEventListener('volumechange', onVolumeChange, true);
 
     const observeAll = () => document.querySelectorAll('.feed-slide video:not([data-autoplay])').forEach(video => {
         video.dataset.autoplay = '';
@@ -215,6 +270,8 @@ export function autoplayVideos() {
         dispose: () => {
             additions.disconnect();
             visibility.disconnect();
+            document.removeEventListener('click', onClick);
+            document.removeEventListener('volumechange', onVolumeChange, true);
         },
     };
 }
