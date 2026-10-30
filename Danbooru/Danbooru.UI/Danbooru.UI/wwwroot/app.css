@@ -409,8 +409,9 @@ kbd {
     position: sticky;
     top: 0;
     z-index: 30;
-    height: var(--header-h);
-    padding: 0 var(--gutter);
+    /* Installed as an app, the page runs under the status bar (viewport-fit=cover); keep the header below it. */
+    height: calc(var(--header-h) + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) var(--gutter) 0;
     display: flex;
     align-items: center;
     gap: 20px;
@@ -896,7 +897,7 @@ kbd {
 
 .viewer-back {
     left: 20px;
-    top: 20px;
+    top: calc(20px + env(safe-area-inset-top));
 }
 
 .viewer-back a {
@@ -913,7 +914,7 @@ kbd {
 
 .viewer-tools {
     right: 20px;
-    top: 20px;
+    top: calc(20px + env(safe-area-inset-top));
     height: 40px;
     padding: 0 4px;
     gap: 2px;
@@ -1556,8 +1557,10 @@ html:has(.feed) {
         margin-left: auto;
     }
 
+    /* On phones the header scrolls away with the page, so images can run all the way up behind the notch. */
     .app-header {
-        background: rgba(10, 10, 11, 0.92);
+        position: relative;
+        background: transparent;
     }
 
     .browse-title {
@@ -1662,12 +1665,12 @@ html:has(.feed) {
 
     .viewer-back {
         left: 12px;
-        top: 12px;
+        top: calc(12px + env(safe-area-inset-top));
     }
 
     .viewer-tools {
         right: 12px;
-        top: 12px;
+        top: calc(12px + env(safe-area-inset-top));
     }
 
     .viewer-strip {
