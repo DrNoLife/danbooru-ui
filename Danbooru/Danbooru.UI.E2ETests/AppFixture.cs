@@ -49,7 +49,8 @@ public sealed class AppFixture : IAsyncLifetime
         {
             BaseURL = BaseUrl,
             ViewportSize = new ViewportSize { Width = width, Height = height },
-            HasTouch = width < 700
+            HasTouch = width < 700,
+            Permissions = ["clipboard-read", "clipboard-write"]
         });
 
         var page = await context.NewPageAsync();

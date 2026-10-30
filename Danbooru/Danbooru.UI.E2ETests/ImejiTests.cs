@@ -123,6 +123,20 @@ public class ImejiTests(AppFixture app) : IClassFixture<AppFixture>
     }
 
     [Fact]
+    public async Task Viewer_ShouldCopyTheAiPromptWhenOpenedDirectly()
+    {
+        // Opened from a link, so there are no neighbouring posts to preload.
+        var page = await app.OpenAsync($"/post/{FakeDanbooru.FirstId}");
+
+        await page.Locator(".aside-actions").GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = "Copy tags as an AI image prompt" }).ClickAsync();
+
+        await Expect(page.Locator(".toast")).ToHaveTextAsync("Prompt copied");
+        var clipboard = await page.EvaluateAsync<string>("navigator.clipboard.readText()");
+        clipboard.Should().StartWith("1girl, hatsune miku, test artist, long hair, smile");
+        await Expect(page.Locator("#blazor-error-ui")).ToBeHiddenAsync();
+    }
+
+    [Fact]
     public async Task Feed_ShouldStepWithJ()
     {
         var page = await app.OpenAsync("/feed");
