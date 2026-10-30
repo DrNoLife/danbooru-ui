@@ -137,6 +137,20 @@ public class ImejiTests(AppFixture app) : IClassFixture<AppFixture>
     }
 
     [Fact]
+    public async Task Feed_ShouldShowVideoControlsOnlyAfterATap()
+    {
+        var page = await app.OpenAsync("/feed", width: 390, height: 844);
+        var video = page.Locator(".feed-slide video").First;
+        await video.ScrollIntoViewIfNeededAsync();
+
+        (await video.EvaluateAsync<bool>("v => v.controls")).Should().BeFalse();
+
+        await video.ClickAsync();
+
+        await page.WaitForFunctionAsync("() => document.querySelector('.feed-slide video').controls");
+    }
+
+    [Fact]
     public async Task Feed_ShouldStepWithJ()
     {
         var page = await app.OpenAsync("/feed");

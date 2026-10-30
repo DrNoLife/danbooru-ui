@@ -65,7 +65,8 @@
             <div class="feed-media">
                 @if (post.IsVideo)
                 {
-                    <video controls loop muted playsinline preload="none" src="@post.SampleUrl" poster="@post.PreviewUrl" aria-label="Post @post.Id"></video>
+                    @* No controls until tapped, so the player UI does not cover the video; see autoplayVideos in imeji.js. *@
+                    <video loop muted playsinline preload="none" src="@post.SampleUrl" poster="@post.PreviewUrl" aria-label="Post @post.Id. Tap for controls."></video>
                 }
                 else
                 {

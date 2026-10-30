@@ -188,7 +188,8 @@ export function preloadImages(urls) {
 }
 
 // Plays feed videos (muted) while they fill most of the screen and pauses them when scrolled away.
-// Watches for slides added later by infinite scrolling.
+// They start without controls so nothing covers the video; a tap shows the player controls, and scrolling
+// away hides them again. Watches for slides added later by infinite scrolling.
 export function autoplayVideos() {
     const visibility = new IntersectionObserver((entries) => {
         for (const entry of entries) {
@@ -198,9 +199,19 @@ export function autoplayVideos() {
                 video.play().catch(() => { /* Autoplay blocked; the controls still work. */ });
             } else {
                 video.pause();
+                video.controls = false;
             }
         }
     }, { threshold: 0.6 });
+
+    const onClick = (event) => {
+        const video = event.target instanceof Element ? event.target.closest('.feed-slide video') : null;
+        if (video && !video.controls) {
+            video.controls = true;
+        }
+    };
+
+    document.addEventListener('click', onClick);
 
     const observeAll = () => document.querySelectorAll('.feed-slide video:not([data-autoplay])').forEach(video => {
         video.dataset.autoplay = '';
@@ -215,6 +226,7 @@ export function autoplayVideos() {
         dispose: () => {
             additions.disconnect();
             visibility.disconnect();
+            document.removeEventListener('click', onClick);
         },
     };
 }

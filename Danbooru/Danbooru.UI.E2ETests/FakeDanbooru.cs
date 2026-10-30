@@ -68,18 +68,19 @@ public sealed class FakeDanbooru : IDanbooruWrapper
     {
         const string image = "/favicon/android-icon-192x192.png";
 
-        // Alternate portrait and landscape so the grid has real rows.
+        // Alternate portrait and landscape so the grid has real rows, with the odd video in between.
         var portrait = id % 2 == 0;
+        var video = id % 7 == 3;
         return new Post
         {
             Id = id,
             Width = portrait ? 600 : 900,
             Height = portrait ? 900 : 600,
-            FileExt = "png",
+            FileExt = video ? "mp4" : "png",
             Rating = "g",
             CreatedAt = DateTime.Now.AddMinutes(-(FirstId - id)),
             FileUrl = image,
-            LargeFileUrl = image,
+            LargeFileUrl = video ? "/test-video.mp4" : image,
             PreviewFileUrl = image,
             TagStringArtist = "test_artist",
             TagStringCharacter = "hatsune_miku",
