@@ -8,17 +8,15 @@ using System.Text.Json;
 
 namespace Danbooru.ApiWrapper.Services;
 
-public class PostsService : BaseService, IPostsService
+public class PostsService(ILogger<PostsService> logger, IHttpClientFactory httpClientFactory) : BaseService(logger, httpClientFactory), IPostsService
 {
-    public PostsService(ILogger<PostsService> logger, IHttpClientFactory httpClientFactory) : base(logger, httpClientFactory) { }
-
     public async Task<List<Post>> GetPostsAsync()
     {
         _logger.LogInformation("Retrieving posts.");
 
         string uri = "posts.json";
         var result = await GetFromApiAsync<List<Post>>(uri);
-        return result ?? new();
+        return result ?? [];
     }
 
     public async Task<List<Post>> GetPostsAsync(UrlParameters parameters)
@@ -27,7 +25,7 @@ public class PostsService : BaseService, IPostsService
 
         string uri = "posts.json" + parameters.ToString();
         var result = await GetFromApiAsync<List<Post>>(uri);
-        return result ?? new();
+        return result ?? [];
     }
 
     public async Task<List<Post>> GetPostsByIdAsync(int postId, int postsToGet)
@@ -36,29 +34,17 @@ public class PostsService : BaseService, IPostsService
 
         string uri = $"posts.json?page=b{postId}&limit={postsToGet}";
         var result = await GetFromApiAsync<List<Post>>(uri);
-        return result ?? new();
+        return result ?? [];
     }
 
     public async Task<List<Post>> GetPostsByTagAsync(string tag)
     {
-        List<string> tags = new()
-        {
-            tag
-        };
-
-        var result = await GetPostsByTagsAsync(tags);
-        return result;
+        return await GetPostsByTagsAsync([tag]);
     }
 
     public async Task<List<Post>> GetPostsByTagAsync(string tag, UrlParameters parameters)
     {
-        List<string> tags = new()
-        {
-            tag
-        };
-
-        var result = await GetPostsByTagsAsync(tags, parameters);
-        return result;
+        return await GetPostsByTagsAsync([tag], parameters);
     }
 
     public async Task<List<Post>> GetPostsByTagsAsync(IEnumerable<string> tags)
@@ -68,7 +54,7 @@ public class PostsService : BaseService, IPostsService
 
         string uri = $"posts.json?tags={tagStringEscaped}";
         var result = await GetFromApiAsync<List<Post>>(uri);
-        return result ?? new();
+        return result ?? [];
     }
 
     public async Task<List<Post>> GetPostsByTagsAsync(IEnumerable<string> tags, UrlParameters parameters)
@@ -78,7 +64,7 @@ public class PostsService : BaseService, IPostsService
 
         string uri = $"posts.json{parameters.ToString()}&tags={tagStringEscaped}";
         var result = await GetFromApiAsync<List<Post>>(uri);
-        return result ?? new();
+        return result ?? [];
     }
 
     public async Task<Post> GetPostByIdAsync(int id)
@@ -89,7 +75,26 @@ public class PostsService : BaseService, IPostsService
         return result ?? new();
     }
 
-    public async Task<List<Post>> PerformSearchAfterPostsAsync(List<TagAutocomplete> tagsThatMustBeIncluded, ContentRating? contentRating, int lastPostId = -1)
+    public async Task<List<Post>> SearchAsync(string tagQuery, string page, int limit, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Searching posts for {tagQuery}, page {page}.", tagQuery, page);
+
+        string uri = $"posts.json?page={Uri.EscapeDataString(page)}&limit={limit}&tags={ToTagParameter(tagQuery)}";
+        return await GetFromApiAsync<List<Post>>(uri, cancellationToken) ?? [];
+    }
+
+    public async Task<int?> CountAsync(string tagQuery, CancellationToken cancellationToken = default)
+    {
+        var result = await GetFromApiAsync<PostCounts>($"counts/posts.json?tags={ToTagParameter(tagQuery)}", cancellationToken);
+        return result?.Counts.Posts;
+    }
+
+    private static string ToTagParameter(string tagQuery)
+    {
+        return UrlHelper.TransformTagStringToUrlFormat(String.Join('+', tagQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries)));
+    }
+
+    public async Task<List<Post>> PerformSearchAfterPostsAsync(List<TagAutocomplete> tagsThatMustBeIncluded, ContentRating? contentRating, int lastPostId = -1, CancellationToken cancellationToken = default)
     {
         int postsToGet = 10;
 
@@ -107,14 +112,9 @@ public class PostsService : BaseService, IPostsService
         }
 
         var tagsToUseEscaped = UrlHelper.TransformTagStringToUrlFormat(tagsToUseConcatenated);
-        string uri = $"posts.json?page=b{lastPostId}&tags={tagsToUseEscaped}";
-
-        
+        string uri = $"posts.json?page=b{lastPostId}&limit={postsToGet}&tags={tagsToUseEscaped}";
 
         // Perform search.
-        List<Post> result = await GetFromApiAsync<List<Post>>(uri) ?? new List<Post>();
-
-        // If we have more than 20 posts, take only the first 20
-        return result.Take(postsToGet).ToList();
+        return await GetFromApiAsync<List<Post>>(uri, cancellationToken) ?? [];
     }
 }

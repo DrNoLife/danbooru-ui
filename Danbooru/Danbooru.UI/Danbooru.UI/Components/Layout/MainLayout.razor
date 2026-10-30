@@ -1,19 +1,66 @@
-﻿@using Danbooru.UI.Client.Pages
-@inherits LayoutComponentBase
+﻿@inherits LayoutComponentBase
+@implements IAsyncDisposable
+@inject KeyboardShortcuts Shortcuts
+@inject SearchSession Session
+@inject ImejiJs Js
 
-<main>
-    @Body
-</main>
+@Body
 
-<div id="blazor-error-ui">
-    An unhandled error has occurred.
+<SearchPalette />
+
+<div id="blazor-error-ui" role="alert">
+    Something went wrong.
     <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
+    <button type="button" class="dismiss" aria-label="Dismiss">×</button>
 </div>
 
 @code {
-    [Inject]
-    public ILogger<MainLayout> Logger { get; set; }
+    private DotNetObjectReference<KeyboardShortcuts>? _shortcutsReference;
+    private IJSObjectReference? _shortcutsHandle;
+    private IJSObjectReference? _scrollHandle;
 
-    
+    protected override void OnInitialized() => Shortcuts.KeyPressed += OnKeyAsync;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _shortcutsReference = DotNetObjectReference.Create(Shortcuts);
+            _shortcutsHandle = await Js.RegisterShortcutsAsync(_shortcutsReference);
+            _scrollHandle = await Js.RememberScrollOnLeaveAsync();
+        }
+    }
+
+    private Task OnKeyAsync(string key)
+    {
+        if (key is "mod+k" or "/" && !Session.IsPaletteOpen)
+        {
+            Session.OpenPalette();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Shortcuts.KeyPressed -= OnKeyAsync;
+
+        try
+        {
+            foreach (var handle in new[] { _shortcutsHandle, _scrollHandle })
+            {
+                if (handle is not null)
+                {
+                    await handle.InvokeVoidAsync("dispose");
+                    await handle.DisposeAsync();
+                }
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, so there is nothing left to clean up in the browser.
+        }
+
+        _shortcutsReference?.Dispose();
+    }
 }

@@ -1,0 +1,353 @@
+@using Danbooru.ApiWrapper.Interfaces
+@using Danbooru.ApiWrapper.Models
+@using Danbooru.UI.Models
+@implements IAsyncDisposable
+@inject SearchSession Session
+@inject Preferences Preferences
+@inject IDanbooruWrapper Danbooru
+@inject ImejiJs Js
+@inject NavigationManager Navigation
+@inject ILogger<SearchPalette> Logger
+
+@if (Session.IsPaletteOpen)
+{
+    <div class="palette-backdrop" @onclick="Close"></div>
+
+    <div class="palette" role="dialog" aria-modal="true" aria-label="Search">
+        <div class="palette-input-row">
+            <Icon Name="search" Size="20" />
+            @foreach (var tag in _draft.Include)
+            {
+                <span class="token">@tag<button type="button" aria-label="Remove @tag" @onclick="() => _draft = _draft.Without(tag)">×</button></span>
+            }
+            @foreach (var tag in _draft.Exclude)
+            {
+                <span class="token exclude">−@tag<button type="button" aria-label="Remove exclusion @tag" @onclick="() => _draft = _draft.Without(tag)">×</button></span>
+            }
+            <label for="palette-input" class="sr-only">Add a tag. Start with a minus to exclude it.</label>
+            <input id="palette-input" @ref="_inputElement" type="text" autocomplete="off" spellcheck="false" enterkeyhint="search"
+                   placeholder="@(_draft.IsEmpty ? "Search tags, e.g. hatsune_miku" : "Add another tag")"
+                   role="combobox" aria-expanded="@(_options.Count > 0 ? "true" : "false")" aria-controls="palette-options"
+                   aria-activedescendant="@(_selected >= 0 ? $"palette-option-{_selected}" : null)"
+                   @bind="_input" @bind:event="oninput" @bind:after="OnInputChangedAsync" />
+            <kbd>Esc</kbd>
+            <button type="button" class="palette-cancel" @onclick="Close">Cancel</button>
+        </div>
+
+        <div class="palette-body" role="listbox" id="palette-options" aria-label="Suggestions">
+            @if (_draft.IsOverTagLimit)
+            {
+                <p class="palette-warning" role="status">Danbooru allows @SearchQuery.AnonymousTagLimit tags per search without an account, excluded tags included. Remove one to search.</p>
+            }
+
+            @for (var i = 0; i < _options.Count; i++)
+            {
+                var index = i;
+                var option = _options[i];
+
+                @if (i == 0 || _options[i - 1].Kind != option.Kind)
+                {
+                    <div class="section-label" role="presentation">@SectionTitle(option.Kind)</div>
+                }
+
+                <div class="palette-option" role="option" id="palette-option-@index" aria-selected="@(index == _selected ? "true" : "false")"
+                     @onclick="() => ChooseAsync(index, exclude: false)">
+                    @switch (option.Kind)
+                    {
+                        case OptionKind.Tag:
+                            <span class="cat tag-cat-@option.Tag!.Category"></span>
+                            <span class="name">@option.Tag.Value</span>
+                            <span class="count">@FormatCount(option.Tag.PostCount)</span>
+                            <span class="hint"><kbd>Tab</kbd>add <kbd>⇧Tab</kbd>exclude</span>
+                            <button type="button" class="quick add" aria-label="Add @option.Tag.Value" @onclick:stopPropagation="true" @onclick="() => ChooseAsync(index, exclude: false)">+</button>
+                            <button type="button" class="quick exclude" aria-label="Exclude @option.Tag.Value" @onclick:stopPropagation="true" @onclick="() => ChooseAsync(index, exclude: true)">−</button>
+                            break;
+                        case OptionKind.Saved:
+                            <span style="color: var(--accent)"><Icon Name="bookmark" Size="14" Filled="true" /></span>
+                            <span class="name">@option.Text</span>
+                            break;
+                        case OptionKind.Recent:
+                            <span class="muted"><Icon Name="clock" Size="14" StrokeWidth="2" /></span>
+                            <span class="name">@option.Text</span>
+                            break;
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="palette-footer">
+            <span class="muted" style="font-size: 12px; margin-right: 4px">Rating</span>
+            @foreach (var rating in RatingExtensions.Each)
+            {
+                <button type="button" class="rating-toggle @rating.CssClass()" aria-pressed="@(Preferences.Ratings.HasFlag(rating) ? "true" : "false")" @onclick="() => Preferences.ToggleRatingAsync(rating)">@rating</button>
+            }
+            <span class="grow"></span>
+            <button type="button" class="btn btn-accent" style="height: 36px" disabled="@_draft.IsOverTagLimit" @onclick="SearchTypedAsync"><kbd class="enter-hint" style="color: inherit; border-color: currentColor">↵</kbd>Search</button>
+        </div>
+    </div>
+}
+
+@code {
+    private enum OptionKind { Tag, Saved, Recent }
+
+    private sealed record Option(OptionKind Kind, string Text, TagAutocomplete? Tag = null);
+
+    private const int DebounceMilliseconds = 200;
+
+    private SearchQuery _draft = SearchQuery.Empty;
+    private string _input = String.Empty;
+    private List<TagAutocomplete> _suggestions = [];
+    private List<Option> _options = [];
+    private int _selected = -1;
+
+    private ElementReference _inputElement;
+    private DotNetObjectReference<SearchPalette>? _selfReference;
+    private IJSObjectReference? _keyHandler;
+    private bool _isSetUp;
+    private CancellationTokenSource _autocompleteCancellation = new();
+
+    protected override void OnInitialized()
+    {
+        Session.Changed += OnSessionChanged;
+        Preferences.Changed += OnPreferencesChanged;
+    }
+
+    private void OnSessionChanged() => InvokeAsync(async () =>
+    {
+        if (Session.IsPaletteOpen && !_isSetUp)
+        {
+            _draft = Session.Query;
+            _input = String.Empty;
+            _suggestions = [];
+            await Session.EnsureStorageLoadedAsync();
+            BuildOptions();
+        }
+
+        StateHasChanged();
+    });
+
+    private void OnPreferencesChanged() => InvokeAsync(StateHasChanged);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Session.IsPaletteOpen && !_isSetUp)
+        {
+            _isSetUp = true;
+            _selfReference ??= DotNetObjectReference.Create(this);
+            _keyHandler = await Js.AttachPaletteKeysAsync(_inputElement, _selfReference);
+            await Js.SetScrollLockAsync(true);
+            await _inputElement.FocusAsync();
+        }
+        else if (!Session.IsPaletteOpen && _isSetUp)
+        {
+            _isSetUp = false;
+            await ReleaseKeyHandlerAsync();
+            await Js.SetScrollLockAsync(false);
+        }
+    }
+
+    private async Task OnInputChangedAsync()
+    {
+        _autocompleteCancellation.Cancel();
+        _autocompleteCancellation = new CancellationTokenSource();
+        var cancellationToken = _autocompleteCancellation.Token;
+
+        var term = _input.Trim().TrimStart('-');
+        if (term.Length == 0)
+        {
+            _suggestions = [];
+            BuildOptions();
+            return;
+        }
+
+        try
+        {
+            await Task.Delay(DebounceMilliseconds, cancellationToken);
+            var suggestions = await Danbooru.Tags.AutocompleteAfterTag(term, cancellationToken);
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                _suggestions = suggestions.Where(x => !String.IsNullOrEmpty(x.Value)).Take(8).ToList();
+                BuildOptions();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The user typed on; a newer request is on its way.
+        }
+        catch (HttpRequestException ex)
+        {
+            Logger.LogWarning(ex, "Autocomplete request failed.");
+        }
+    }
+
+    private void BuildOptions()
+    {
+        _options = _suggestions.Select(x => new Option(OptionKind.Tag, x.Value, x)).ToList();
+
+        // Saved and recent searches are shortcuts for starting over, so only offer them before the user types.
+        if (_input.Trim().Length == 0)
+        {
+            _options.AddRange(Session.Saved.Select(x => new Option(OptionKind.Saved, x)));
+            _options.AddRange(Session.Recent.Where(x => !Session.Saved.Contains(x)).Take(5).Select(x => new Option(OptionKind.Recent, x)));
+        }
+
+        _selected = _suggestions.Count > 0 ? 0 : -1;
+    }
+
+    [JSInvokable]
+    public async Task OnPaletteKey(string key, bool shift)
+    {
+        switch (key)
+        {
+            case "ArrowDown" when _options.Count > 0:
+                _selected = (_selected + 1) % _options.Count;
+                break;
+            case "ArrowUp" when _options.Count > 0:
+                _selected = _selected <= 0 ? _options.Count - 1 : _selected - 1;
+                break;
+            case "Tab":
+                if (_selected >= 0 && _options[_selected].Kind == OptionKind.Tag)
+                {
+                    await ChooseAsync(_selected, exclude: shift);
+                }
+                else
+                {
+                    AddTypedTag(exclude: shift);
+                }
+                break;
+            case "Enter":
+                // A saved or recent search only replaces the search when the user has not started building one.
+                if (_selected >= 0 && _options[_selected].Kind != OptionKind.Tag && _draft.IsEmpty && _input.Trim().Length == 0)
+                {
+                    await ChooseAsync(_selected, exclude: false);
+                    return;
+                }
+
+                if (_selected >= 0 && _input.Trim().Length > 0)
+                {
+                    await ChooseAsync(_selected, exclude: false);
+                }
+                else
+                {
+                    AddTypedTag(exclude: false);
+                }
+
+                await SubmitAsync();
+                return;
+            case "Escape":
+                Close();
+                return;
+            case "Backspace":
+                var last = _draft.Exclude.LastOrDefault() ?? _draft.Include.LastOrDefault();
+                if (last is not null)
+                {
+                    _draft = _draft.Without(last);
+                }
+                break;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task ChooseAsync(int index, bool exclude)
+    {
+        var option = _options[index];
+        if (option.Kind != OptionKind.Tag)
+        {
+            await SearchAsync(SearchQuery.Parse(option.Text));
+            return;
+        }
+
+        // A leading minus in the input means the user is typing an exclusion.
+        exclude |= _input.TrimStart().StartsWith('-');
+        _draft = exclude ? _draft.WithExclude(option.Text) : _draft.WithInclude(option.Text);
+        ResetInput();
+        await _inputElement.FocusAsync();
+    }
+
+    private void AddTypedTag(bool exclude)
+    {
+        var typed = _input.Trim();
+        if (typed.Length == 0)
+        {
+            return;
+        }
+
+        _draft = typed.StartsWith('-') || exclude ? _draft.WithExclude(typed.TrimStart('-')) : _draft.WithInclude(typed);
+        ResetInput();
+    }
+
+    private void ResetInput()
+    {
+        _autocompleteCancellation.Cancel();
+        _input = String.Empty;
+        _suggestions = [];
+        BuildOptions();
+    }
+
+    /// <summary>
+    /// The Search button: whatever is still typed in the input counts as a tag, like pressing Enter.
+    /// </summary>
+    private Task SearchTypedAsync()
+    {
+        AddTypedTag(exclude: false);
+        return SubmitAsync();
+    }
+
+    private Task SubmitAsync() => _draft.IsOverTagLimit ? Task.CompletedTask : SearchAsync(_draft);
+
+    private async Task SearchAsync(SearchQuery query)
+    {
+        Session.ClosePalette();
+        await Session.AddRecentAsync(query);
+
+        // Stay in the feed when searching from it; everything else lands in the grid.
+        var onFeed = Navigation.ToBaseRelativePath(Navigation.Uri).StartsWith("feed", StringComparison.OrdinalIgnoreCase);
+        Navigation.NavigateTo(onFeed ? Links.Feed(query) : Links.Browse(query));
+    }
+
+    private void Close() => Session.ClosePalette();
+
+    private static string SectionTitle(OptionKind kind) => kind switch
+    {
+        OptionKind.Tag => "Tags",
+        OptionKind.Saved => "Saved searches",
+        _ => "Recent"
+    };
+
+    private static string FormatCount(int count) => count switch
+    {
+        >= 1_000_000 => $"{count / 1_000_000.0:0.#}M",
+        >= 1_000 => $"{count / 1_000.0:0.#}k",
+        _ => count.ToString()
+    };
+
+    private async Task ReleaseKeyHandlerAsync()
+    {
+        if (_keyHandler is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _keyHandler.InvokeVoidAsync("dispose");
+            await _keyHandler.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, so there is nothing left to clean up in the browser.
+        }
+
+        _keyHandler = null;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Session.Changed -= OnSessionChanged;
+        Preferences.Changed -= OnPreferencesChanged;
+        _autocompleteCancellation.Cancel();
+        await ReleaseKeyHandlerAsync();
+        _selfReference?.Dispose();
+    }
+}

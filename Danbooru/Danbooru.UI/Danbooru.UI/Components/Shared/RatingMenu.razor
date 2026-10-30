@@ -1,0 +1,41 @@
+@using Danbooru.UI.Models
+@implements IDisposable
+@inject Preferences Preferences
+
+<div class="rating-button">
+    <button type="button" class="rating-trigger" aria-haspopup="true" aria-expanded="@(_open ? "true" : "false")" aria-label="Content rating: @Preferences.Ratings.Label()" @onclick="() => _open = !_open">
+        <RatingDots Ratings="Preferences.Ratings" />
+        @if (ShowLabel)
+        {
+            <span class="rating-label">@Preferences.Ratings.Label()</span>
+        }
+        <Icon Name="chevron-down" Size="14" StrokeWidth="2.2" />
+    </button>
+
+    @if (_open)
+    {
+        <button type="button" class="popover-dismiss" aria-label="Close rating menu" @onclick="() => _open = false"></button>
+        <div class="popover rating-menu" role="group" aria-label="Content rating">
+            <p>Show posts rated</p>
+            @foreach (var rating in RatingExtensions.Each)
+            {
+                <button type="button" class="rating-toggle @rating.CssClass()" aria-pressed="@(Preferences.Ratings.HasFlag(rating) ? "true" : "false")" @onclick="() => Preferences.ToggleRatingAsync(rating)">
+                    <span class="rating-dot"></span>@rating
+                </button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public bool ShowLabel { get; set; } = true;
+
+    private bool _open;
+
+    protected override void OnInitialized() => Preferences.Changed += OnPreferencesChanged;
+
+    private void OnPreferencesChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Preferences.Changed -= OnPreferencesChanged;
+}

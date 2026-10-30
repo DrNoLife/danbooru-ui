@@ -1,0 +1,337 @@
+@page "/post/{Id:int}"
+@using Danbooru.ApiWrapper.Interfaces
+@using Danbooru.ApiWrapper.Models
+@using Danbooru.UI.Models
+@using System.Net
+@implements IDisposable
+@inject IDanbooruWrapper Danbooru
+@inject SearchSession Session
+@inject KeyboardShortcuts Shortcuts
+@inject ImejiJs Js
+@inject NavigationManager Navigation
+@inject ILogger<Viewer> Logger
+
+<PageTitle>@(Post is null ? "Imeji" : $"{TitleTags} · Imeji")</PageTitle>
+
+<div class="viewer">
+    <div class="viewer-stage @(_zoomed ? "zoomed" : "")" @ref="_stage">
+        @if (Post is { } post)
+        {
+            @if (String.IsNullOrEmpty(post.FileUrl) && String.IsNullOrEmpty(post.LargeFileUrl))
+            {
+                <div class="status-message">
+                    <h2>File hidden</h2>
+                    <p>Danbooru only shows this post's file to signed-in members.</p>
+                </div>
+            }
+            else if (!post.IsImage)
+            {
+                <video class="viewer-media" controls autoplay loop playsinline src="@post.LargeFileUrl" poster="@post.PreviewFileUrl" aria-label="@MediaLabel"></video>
+            }
+            else if (_zoomed)
+            {
+                <img class="viewer-media" src="@post.FileUrl" alt="@MediaLabel" />
+            }
+            else
+            {
+                <img class="viewer-media" src="@(String.IsNullOrEmpty(post.LargeFileUrl) ? post.FileUrl : post.LargeFileUrl)" srcset="@FullSrcSet" sizes="(max-width: 1024px) 100vw, calc(100vw - 360px)" alt="@MediaLabel" />
+            }
+        }
+        else if (_notFound)
+        {
+            <div class="status-message">
+                <h2>Post not found</h2>
+                <p>It may have been deleted, or it is hidden from visitors without an account.</p>
+            </div>
+        }
+        else if (_error is not null)
+        {
+            <div class="status-message" role="alert"><p>@_error</p></div>
+        }
+
+        <div class="viewer-overlay viewer-back">
+            <a class="glass" href="@BackLink">
+                <Icon Name="chevron-left" StrokeWidth="2.2" />
+                <span class="mono">@(Session.Query.IsEmpty ? "Latest" : Session.Query.ToString())</span>
+                @if (_index >= 0)
+                {
+                    <span class="muted">@(_index + 1) / @(Session.ResultTotal?.ToString("N0") ?? Session.Results.Count.ToString())</span>
+                }
+            </a>
+        </div>
+
+        @if (Post is not null)
+        {
+            <div class="viewer-overlay viewer-tools glass" role="toolbar" aria-label="Image tools">
+                @if (Post.IsImage)
+                {
+                    <button type="button" class="icon-btn" aria-pressed="@(_zoomed ? "true" : "false")" aria-label="Show at full size" title="Full size (Z)" @onclick="ToggleZoom"><Icon Name="zoom" StrokeWidth="1.8" /></button>
+                }
+                <button type="button" class="icon-btn" aria-label="Fullscreen" title="Fullscreen (F)" @onclick="() => Js.ToggleFullscreenAsync(_stage)"><Icon Name="fullscreen" StrokeWidth="1.8" /></button>
+                <button type="button" class="icon-btn details-toggle" aria-pressed="@(_showDetails ? "true" : "false")" aria-label="@(_showDetails ? "Hide details" : "Show details")" title="Details (I)" @onclick="() => _showDetails = !_showDetails"><Icon Name="panel" StrokeWidth="1.8" /></button>
+            </div>
+        }
+
+        @if (Previous is { } previous)
+        {
+            <a class="viewer-step prev" href="@Links.Post(previous.Id)" aria-label="Previous post" title="Previous (←)"><Icon Name="chevron-left" Size="20" StrokeWidth="2" /></a>
+        }
+        @if (Next is { } next)
+        {
+            <a class="viewer-step next" href="@Links.Post(next.Id)" aria-label="Next post" title="Next (→)"><Icon Name="chevron-right" Size="20" StrokeWidth="2" /></a>
+        }
+
+        @if (_index >= 0 && Session.Results.Count > 1)
+        {
+            <nav class="viewer-overlay viewer-strip glass" aria-label="Nearby posts">
+                @foreach (var near in Nearby)
+                {
+                    <a href="@Links.Post(near.Id)" aria-label="Post @near.Id" aria-current="@(near.Id == Id ? "true" : "false")">
+                        <img src="@near.PreviewUrl" alt="" loading="lazy" />
+                    </a>
+                }
+            </nav>
+        }
+    </div>
+
+    @if (Post is { } details)
+    {
+        <aside class="viewer-aside" id="details" aria-label="Details" hidden="@(!_showDetails)">
+            <div class="aside-head">
+                @foreach (var artist in details.TagsArtist)
+                {
+                    <a class="artist" href="@Links.Browse(new SearchQuery([artist], []))">@artist</a>
+                }
+                @if (RatingExtensions.FromLetter(details.Rating) is var rating && rating != Rating.None)
+                {
+                    <span class="rating-badge @rating.CssClass()">@rating</span>
+                }
+            </div>
+
+            <div class="aside-actions">
+                <a class="btn btn-accent" href="@Links.Download(details.Id)" download><Icon Name="download" Size="16" StrokeWidth="2.2" />Save</a>
+                <a class="btn btn-square" href="@details.FileUrl" target="_blank" rel="noopener" aria-label="Open original file" title="Original (O)"><Icon Name="external" StrokeWidth="1.8" /></a>
+                @if (SimilarQuery is { } similar)
+                {
+                    <a class="btn btn-square" href="@Links.Browse(similar)" aria-label="Posts with @similar" title="Similar: @similar (S)"><Icon Name="similar" StrokeWidth="1.8" /></a>
+                }
+                <button type="button" class="btn btn-square" aria-label="Copy link" title="Copy link (C)" @onclick="CopyLinkAsync"><Icon Name="link" StrokeWidth="1.8" /></button>
+            </div>
+
+            <TagList Title="Copyright" Category="3" Tags="details.TagsCopyright" />
+            <TagList Title="Character" Category="4" Tags="details.TagsCharacter" />
+            <TagList Title="General" Category="0" Tags="details.TagsGeneral" Collapsed="15" />
+            <TagList Title="Meta" Category="5" Tags="details.TagsMeta" />
+
+            <div class="aside-footer">
+                <div class="row">
+                    <span>@details.Width×@details.Height · @details.FileExt.ToUpperInvariant() @FormatSize(details.FileSize)</span>
+                    <span>@details.CreatedAt.ToString("d MMM yyyy", System.Globalization.CultureInfo.InvariantCulture)</span>
+                </div>
+                <div class="row">
+                    <a href="@Links.Original(details.Id)" target="_blank" rel="noopener">View on Danbooru</a>
+                    @if (Uri.TryCreate(details.Source, UriKind.Absolute, out var source) && source.Scheme is "http" or "https")
+                    {
+                        <a href="@source" target="_blank" rel="noopener noreferrer">Source</a>
+                    }
+                </div>
+                <div class="keys"><span>← → browse</span><span>I details</span><span>F fullscreen</span><span>Esc back</span></div>
+            </div>
+        </aside>
+
+        <nav class="viewer-mobile-bar glass" aria-label="Post actions">
+            <button type="button" @onclick='() => Js.ScrollIntoViewAsync("#details")'><Icon Name="tag" Size="20" StrokeWidth="1.8" />Tags</button>
+            @if (SimilarQuery is { } similarQuery)
+            {
+                <a href="@Links.Browse(similarQuery)"><Icon Name="similar" Size="20" StrokeWidth="1.8" />Similar</a>
+            }
+            else
+            {
+                <a href="@details.FileUrl" target="_blank" rel="noopener"><Icon Name="external" Size="20" StrokeWidth="1.8" />Original</a>
+            }
+            <a class="primary" href="@Links.Download(details.Id)" download><Icon Name="download" Size="20" StrokeWidth="2" />Save</a>
+            <button type="button" @onclick="ShareAsync"><Icon Name="share" Size="20" StrokeWidth="1.8" />Share</button>
+        </nav>
+    }
+
+    @if (_toast is not null)
+    {
+        <div class="toast glass" role="status">@_toast</div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    /// <summary>
+    /// Carries the post from prerendering to the interactive circuit.
+    /// </summary>
+    [PersistentState]
+    public Post? Post { get; set; }
+
+    private ElementReference _stage;
+    private bool _zoomed;
+    private bool _showDetails = true;
+    private bool _notFound;
+    private string? _error;
+    private string? _toast;
+    private int _index = -1;
+    private int _loadedId;
+
+    private PostSummary? Previous => _index > 0 ? Session.Results[_index - 1] : null;
+    private PostSummary? Next => _index >= 0 && _index < Session.Results.Count - 1 ? Session.Results[_index + 1] : null;
+
+    private IEnumerable<PostSummary> Nearby => Session.Results.Skip(Math.Max(0, _index - 3)).Take(7);
+
+    private string BackLink => Links.Browse(Session.Query);
+
+    private string TitleTags => String.Join(", ", (Post!.TagsCharacter.Count > 0 ? Post.TagsCharacter : Post.TagsCopyright).Take(2).Select(x => x.Replace('_', ' '))) is { Length: > 0 } tags ? tags : $"Post {Post.Id}";
+
+    private string MediaLabel => Post is null ? "" : $"{TitleTags}, by {String.Join(", ", Post.TagsArtist.DefaultIfEmpty("unknown artist"))}";
+
+    /// <summary>
+    /// The sample and the original, so the browser only fetches the (often huge) original when the screen needs it.
+    /// </summary>
+    private string FullSrcSet
+    {
+        get
+        {
+            var sample = Post!.MediaAsset?.Variants.FirstOrDefault(x => x.Type == "sample");
+            var candidates = new List<string>();
+            if (sample is not null && sample.Width > 0)
+            {
+                candidates.Add($"{sample.Url} {sample.Width}w");
+            }
+
+            if (!String.IsNullOrEmpty(Post.FileUrl) && Post.Width > 0)
+            {
+                candidates.Add($"{Post.FileUrl} {Post.Width}w");
+            }
+
+            return String.Join(", ", candidates);
+        }
+    }
+
+    /// <summary>
+    /// "Similar" means the same character, else the same series, else the same artist.
+    /// </summary>
+    private SearchQuery? SimilarQuery
+    {
+        get
+        {
+            var tag = Post?.TagsCharacter.FirstOrDefault() ?? Post?.TagsCopyright.FirstOrDefault() ?? Post?.TagsArtist.FirstOrDefault();
+            return tag is null ? null : new SearchQuery([tag], []);
+        }
+    }
+
+    protected override void OnInitialized() => Shortcuts.KeyPressed += OnKeyAsync;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id == _loadedId)
+        {
+            return;
+        }
+
+        _loadedId = Id;
+        _zoomed = false;
+        _notFound = false;
+        _error = null;
+        _index = Session.Results.ToList().FindIndex(x => x.Id == Id);
+        Session.LastViewedPostId = Id;
+
+        if (Post?.Id == Id)
+        {
+            return;
+        }
+
+        Post = null;
+        try
+        {
+            Post = await Danbooru.Posts.GetPostByIdAsync(Id);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            _notFound = true;
+        }
+        catch (HttpRequestException ex)
+        {
+            Logger.LogWarning(ex, "Loading post {id} failed.", Id);
+            _error = SearchErrors.Describe(ex);
+        }
+    }
+
+    private void ToggleZoom() => _zoomed = !_zoomed;
+
+    private async Task OnKeyAsync(string key)
+    {
+        if (Session.IsPaletteOpen)
+        {
+            return;
+        }
+
+        switch (key)
+        {
+            case "ArrowLeft" when Previous is not null:
+                Navigation.NavigateTo(Links.Post(Previous.Id));
+                break;
+            case "ArrowRight" when Next is not null:
+                Navigation.NavigateTo(Links.Post(Next.Id));
+                break;
+            case "Escape":
+                Navigation.NavigateTo(BackLink);
+                break;
+            case "i":
+                _showDetails = !_showDetails;
+                break;
+            case "f":
+                await Js.ToggleFullscreenAsync(_stage);
+                break;
+            case "z" when Post?.IsImage == true:
+                ToggleZoom();
+                break;
+            case "o" when Post is not null:
+                Navigation.NavigateTo(Post.FileUrl);
+                break;
+            case "s" when SimilarQuery is { } similar:
+                Navigation.NavigateTo(Links.Browse(similar));
+                break;
+            case "c":
+                await CopyLinkAsync();
+                break;
+            default:
+                return;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task CopyLinkAsync()
+    {
+        await Js.CopyTextAsync(Navigation.Uri);
+        await ShowToastAsync("Link copied");
+    }
+
+    private async Task ShareAsync()
+    {
+        var result = await Js.ShareAsync(Navigation.Uri, TitleTags);
+        if (result == "copied")
+        {
+            await ShowToastAsync("Link copied");
+        }
+    }
+
+    private async Task ShowToastAsync(string message)
+    {
+        _toast = message;
+        StateHasChanged();
+        await Task.Delay(1800);
+        _toast = null;
+        StateHasChanged();
+    }
+
+    private static string FormatSize(int bytes) => bytes >= 1024 * 1024 ? $"{bytes / (1024.0 * 1024):0.0} MB" : $"{bytes / 1024} KB";
+
+    public void Dispose() => Shortcuts.KeyPressed -= OnKeyAsync;
+}

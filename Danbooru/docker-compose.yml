@@ -1,12 +1,10 @@
-version: '3.8'
-
 services:
   danbooru:
-    image: thorchr96/danbooruui:latest
-    #build:
-    #  context: .
-    #  dockerfile: ./Danbooru.UI/Danbooru.UI/Dockerfile
+    # Pin a release with IMAGE_TAG (e.g. in a .env file next to this file), so a deploy is explicit and easy to roll back.
+    image: ghcr.io/drnolife/danbooru-ui:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: ./Danbooru.UI/Danbooru.UI/Dockerfile
     ports:
-      - "10100:8080" 
-      - "10101:8081" 
+      - "10100:8080"
     restart: unless-stopped

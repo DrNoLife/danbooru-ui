@@ -4,15 +4,12 @@ public static class UrlHelper
 {
     public static string TransformTagStringToUrlFormat(string tagString)
     {
-        // Replace spaces with '+'
-        string modified = tagString.Replace(" ", "_");
+        // Tags are separated by '+'. Escape each tag on its own, so characters like '&', '#', '/' and '(' survive the query string.
+        var tags = tagString
+            .ToLower()
+            .Split('+', StringSplitOptions.RemoveEmptyEntries)
+            .Select(tag => Uri.EscapeDataString(tag.Trim().Replace(' ', '_')));
 
-        // Replace '(' with '%28' and ')' with '%29'
-        modified = modified.Replace("(", "%28").Replace(")", "%29");
-
-        // Convert to lowercase
-        modified = modified.ToLower();
-
-        return modified;
+        return String.Join('+', tags);
     }
 }

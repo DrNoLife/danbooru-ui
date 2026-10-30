@@ -1,43 +1,72 @@
-name: .NET Build and Deploy
+name: CI
 
 on:
   push:
-    branches: [ "dev" ]
+    branches: [ "main", "dev" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
+  workflow_dispatch:
+  # The release workflow runs this first, so a release never ships untested code.
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
-  build:
+  build-and-test:
+    name: Build and test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Danbooru
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 8.0.x
-          
-      - name: Restore dependencies
+          global-json-file: Danbooru/global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('Danbooru/Directory.Packages.props', 'Danbooru/**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
         run: dotnet restore
-        working-directory: Danbooru
 
+      # CI=true (set by GitHub) turns warnings into errors, see Directory.Build.props.
       - name: Build
-        run: dotnet build --no-restore
-        working-directory: Danbooru
-
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 8.0.x
+        run: dotnet build --no-restore --configuration Release
 
       - name: Test
-        run: dotnet test Danbooru.sln --verbosity detailed
-        working-directory: Danbooru
+        run: dotnet test --no-build --configuration Release
 
-  
+  docker:
+    name: Docker image
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Only checks that the image builds. Images are published by release.yml when a version tag is pushed.
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: Danbooru
+          file: Danbooru/Danbooru.UI/Danbooru.UI/Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

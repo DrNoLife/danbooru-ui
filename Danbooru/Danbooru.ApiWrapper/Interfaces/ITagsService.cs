@@ -13,5 +13,5 @@ public interface ITagsService
     public Task<List<Tag>> SearchAfterTagByNameAsync(string name);
     public Task<List<Tag>> SearchAfterTagByNameAsync(string name, UrlParameters parameters);
 
-    public Task<List<TagAutocomplete>> AutocompleteAfterTag(string searchQuery);
+    public Task<List<TagAutocomplete>> AutocompleteAfterTag(string searchQuery, CancellationToken cancellationToken = default);
 }

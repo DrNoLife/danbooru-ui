@@ -1,0 +1,25 @@
+version: 2
+updates:
+  - package-ecosystem: "nuget"
+    directory: "/Danbooru"
+    schedule:
+      interval: "weekly"
+    groups:
+      dotnet:
+        patterns: [ "Microsoft.*", "System.*" ]
+      tests:
+        patterns: [ "xunit*", "Moq", "FluentAssertions" ]
+    ignore:
+      # 8.x and later need a paid license for commercial use.
+      - dependency-name: "FluentAssertions"
+        versions: [ ">=8.0.0" ]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/Danbooru/Danbooru.UI/Danbooru.UI"
+    schedule:
+      interval: "weekly"

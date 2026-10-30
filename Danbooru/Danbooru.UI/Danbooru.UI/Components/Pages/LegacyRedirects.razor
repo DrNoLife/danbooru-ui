@@ -1,0 +1,25 @@
+@page "/Search/{SearchTerm}"
+@page "/Search/{SearchTerm}/Page/{PageNumber:int}"
+@page "/Page/{PageNumber:int}"
+@page "/doom-scroll"
+@using Danbooru.UI.Models
+@inject NavigationManager Navigation
+
+@* Old URLs from before the redesign, kept working for bookmarks and shared links. *@
+
+@code {
+    [Parameter]
+    public string? SearchTerm { get; set; }
+
+    [Parameter]
+    public int PageNumber { get; set; }
+
+    protected override void OnInitialized()
+    {
+        var target = Navigation.ToBaseRelativePath(Navigation.Uri).StartsWith("doom-scroll", StringComparison.OrdinalIgnoreCase)
+            ? Links.Feed(SearchQuery.Empty)
+            : Links.Browse(SearchQuery.Parse(SearchTerm), Math.Max(PageNumber, 1));
+
+        Navigation.NavigateTo(target, replace: true);
+    }
+}

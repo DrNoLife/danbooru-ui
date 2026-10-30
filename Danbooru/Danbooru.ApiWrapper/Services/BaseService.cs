@@ -4,25 +4,20 @@ using System.Text.Json;
 
 namespace Danbooru.ApiWrapper.Services;
 
-public abstract class BaseService : IBaseService
+public abstract class BaseService(ILogger<IBaseService> logger, IHttpClientFactory httpClientFactory) : IBaseService
 {
-    protected readonly ILogger<IBaseService> _logger;
-    protected readonly IHttpClientFactory _httpClientFactory;
-    protected readonly string _httpClientName = "danbooru";
+    public const string HttpClientName = "danbooru";
 
-    public BaseService(ILogger<IBaseService> logger, IHttpClientFactory httpClientFactory)
-    {
-        _logger = logger;
-        _httpClientFactory = httpClientFactory;
-    }
+    protected readonly ILogger<IBaseService> _logger = logger;
 
-    public async Task<T?> GetFromApiAsync<T>(string uri)
+    public async Task<T?> GetFromApiAsync<T>(string uri, CancellationToken cancellationToken = default)
     {
-        var client = _httpClientFactory.CreateClient(_httpClientName);
-        var response = await client.GetAsync(uri);
+        var client = httpClientFactory.CreateClient(HttpClientName);
+        using var response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
-        var contentString = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<T>(contentString);
+
+        await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        var result = await JsonSerializer.DeserializeAsync<T>(contentStream, cancellationToken: cancellationToken);
 
         if (result is null)
         {

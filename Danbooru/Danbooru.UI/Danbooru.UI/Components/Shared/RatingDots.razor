@@ -1,0 +1,13 @@
+@using Danbooru.UI.Models
+
+<span class="rating-dots" aria-hidden="true">
+    @foreach (var rating in RatingExtensions.Each)
+    {
+        <span class="rating-dot @rating.CssClass() @(Ratings.HasFlag(rating) ? "" : "off")"></span>
+    }
+</span>
+
+@code {
+    [Parameter]
+    public Rating Ratings { get; set; }
+}

@@ -1,0 +1,45 @@
+@using Danbooru.UI.Models
+@inject SearchSession Session
+
+@if (Tags.Count > 0)
+{
+    <section class="tag-group">
+        <h2 class="section-label">@Title</h2>
+        @foreach (var tag in Visible)
+        {
+            <div class="tag-row">
+                <a class="tag-cat-@Category" href="@Links.Browse(new SearchQuery([tag], []))">@tag</a>
+                <a class="add" href="@Links.Browse(Session.Query.WithInclude(tag))" aria-label="Add @tag to the search" title="Add to search">+</a>
+                <a class="exclude" href="@Links.Browse(Session.Query.WithExclude(tag))" aria-label="Exclude @tag from the search" title="Exclude from search">−</a>
+            </div>
+        }
+        @if (Collapsed is int limit && Tags.Count > limit && !_expanded)
+        {
+            <button type="button" class="show-all" @onclick="() => _expanded = true">Show all @Tags.Count</button>
+        }
+    </section>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = null!;
+
+    /// <summary>
+    /// Danbooru's tag category number, for the color.
+    /// </summary>
+    [Parameter]
+    public int Category { get; set; }
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<string> Tags { get; set; } = [];
+
+    /// <summary>
+    /// Show only this many tags until the user asks for the rest.
+    /// </summary>
+    [Parameter]
+    public int? Collapsed { get; set; }
+
+    private bool _expanded;
+
+    private IEnumerable<string> Visible => _expanded || Collapsed is null ? Tags : Tags.Take(Collapsed.Value);
+}

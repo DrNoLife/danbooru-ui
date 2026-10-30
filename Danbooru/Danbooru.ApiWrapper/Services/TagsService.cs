@@ -6,10 +6,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Danbooru.ApiWrapper.Services;
 
-public class TagsService : BaseService, ITagsService
+public class TagsService(ILogger<TagsService> logger, IHttpClientFactory httpClientFactory) : BaseService(logger, httpClientFactory), ITagsService
 {
-    public TagsService(ILogger<TagsService> logger, IHttpClientFactory httpClientFactory) : base(logger, httpClientFactory) { }
-
     public async Task<Tag> GetTagAsyncById(int id)
     {
         _logger.LogInformation("Searching for a specific tag, with id of {id}.", id);
@@ -25,7 +23,7 @@ public class TagsService : BaseService, ITagsService
 
         string uri = "tags.json";
         var result = await GetFromApiAsync<List<Tag>>(uri);
-        return result ?? new();
+        return result ?? [];
     }
 
     public async Task<List<Tag>> GetTagsAsync(UrlParameters parameters)
@@ -34,7 +32,7 @@ public class TagsService : BaseService, ITagsService
 
         string uri = "tags.json" + parameters.ToString();
         var result = await GetFromApiAsync<List<Tag>>(uri);
-        return result ?? new();
+        return result ?? [];
     }
 
     public async Task<List<Tag>> SearchAfterTagByNameAsync(string name)
@@ -43,10 +41,10 @@ public class TagsService : BaseService, ITagsService
 
         string uri = $"tags.json?commit=Search&search%5Bhide_empty%5D=yes&search%5Bname_or_alias_matches%5D={UrlHelper.TransformTagStringToUrlFormat(name)}";
 
-        _logger.LogInformation(uri);
+        _logger.LogInformation("Tag search uri: {uri}", uri);
 
         var result = await GetFromApiAsync<List<Tag>>(uri);
-        return result ?? new();
+        return result ?? [];
     }
 
     public async Task<List<Tag>> SearchAfterTagByNameAsync(string name, UrlParameters parameters)
@@ -55,21 +53,21 @@ public class TagsService : BaseService, ITagsService
 
         string uri = $"tags.json{parameters.ToString()}&commit=Search&search%5Bhide_empty%5D=yes&search%5Bname_or_alias_matches%5D={UrlHelper.TransformTagStringToUrlFormat(name)}";
         var result = await GetFromApiAsync<List<Tag>>(uri);
-        return result ?? new();
+        return result ?? [];
     }
 
-    public async Task<List<TagAutocomplete>> AutocompleteAfterTag(string searchQuery)
+    public async Task<List<TagAutocomplete>> AutocompleteAfterTag(string searchQuery, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Trying to search after tags...");
-        string uri = $"autocomplete.json?search%5Bquery%5D={searchQuery}&search%5Btype%5D=tag_query&limit=20";
+        string uri = $"autocomplete.json?search%5Bquery%5D={Uri.EscapeDataString(searchQuery)}&search%5Btype%5D=tag_query&limit=20";
         try
         {
-            var result = await GetFromApiAsync<List<TagAutocomplete>>(uri);
-            return result ?? new();
+            var result = await GetFromApiAsync<List<TagAutocomplete>>(uri, cancellationToken);
+            return result ?? [];
         }
-        catch (Exception)
+        catch (HttpRequestException ex)
         {
-            _logger.LogError("Failed to get content from uri: {uri}", uri);
+            _logger.LogError(ex, "Failed to get content from uri: {uri}", uri);
             throw;
         }
     }

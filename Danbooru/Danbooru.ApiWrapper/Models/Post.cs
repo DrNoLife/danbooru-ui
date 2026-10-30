@@ -143,96 +143,35 @@ public class Post
     public string PreviewFileUrl { get; set; } = String.Empty;
 
     private List<string>? _tagsGeneral;
-    public List<string> TagsGeneral 
-    {
-        get
-        {
-            if(_tagsGeneral is null)
-            {
-                _tagsGeneral = GetTagsListFromString(TagStringGeneral);
-            }
-
-            return _tagsGeneral.Count == 1 && String.IsNullOrEmpty(_tagsGeneral[0]) 
-                ? new List<string>() 
-                : _tagsGeneral;
-        }
-    }
+    public List<string> TagsGeneral => _tagsGeneral ??= GetTagsListFromString(TagStringGeneral);
 
     private List<string>? _tagsCharacter;
-    public List<string> TagsCharacter
-    {
-        get
-        {
-            if (_tagsCharacter is null)
-            {
-                _tagsCharacter = GetTagsListFromString(TagStringCharacter);
-            }
-
-            return _tagsCharacter.Count == 1 && String.IsNullOrEmpty(_tagsCharacter[0])
-                ? new List<string>()
-                : _tagsCharacter;
-        }
-    }
+    public List<string> TagsCharacter => _tagsCharacter ??= GetTagsListFromString(TagStringCharacter);
 
     private List<string>? _tagsArtist;
-    public List<string> TagsArtist
-    {
-        get
-        {
-            if (_tagsArtist is null)
-            {
-                _tagsArtist = GetTagsListFromString(TagStringArtist);
-            }
-
-            return _tagsArtist.Count == 1 && String.IsNullOrEmpty(_tagsArtist[0])
-                ? new List<string>()
-                : _tagsArtist;
-        }
-    }
+    public List<string> TagsArtist => _tagsArtist ??= GetTagsListFromString(TagStringArtist);
 
     private List<string>? _tagsCopyright;
-    public List<string> TagsCopyright
-    {
-        get
-        {
-            if (_tagsCopyright is null)
-            {
-                _tagsCopyright = GetTagsListFromString(TagStringCopyright);
-            }
-
-            return _tagsCopyright.Count == 1 && String.IsNullOrEmpty(_tagsCopyright[0])
-                ? new List<string>()
-                : _tagsCopyright;
-        }
-    }
+    public List<string> TagsCopyright => _tagsCopyright ??= GetTagsListFromString(TagStringCopyright);
 
     private List<string>? _tagsMeta;
-    public List<string> TagsMeta
-    {
-        get
-        {
-            if (_tagsMeta is null)
-            {
-                _tagsMeta = GetTagsListFromString(TagStringMeta);
-            }
-
-            return _tagsMeta.Count == 1 && String.IsNullOrEmpty(_tagsMeta[0])
-                ? new List<string>()
-                : _tagsMeta;
-        }
-    }
+    public List<string> TagsMeta => _tagsMeta ??= GetTagsListFromString(TagStringMeta);
 
     private List<string> GetTagsListFromString(string tagString)
     {
-        var tags = tagString.Split(' ');
-        for (int i = 0; i < tags.Length; i++)
-        {
-            var tag = tags[i];
-            tag.Replace('_', ' ');
-        }
-
-        return tags.ToList();
+        return tagString.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
     }
+
+    public string? GetVariantUrl(string type) => MediaAsset?.Variants.FirstOrDefault(x => x.Type == type)?.Url;
+
+    /// <summary>
+    /// Builds an img srcset from the downscaled variants (360x360, 720x720, sample), so the browser can pick the smallest one that fits.
+    /// </summary>
+    public string ScaledVariantsSrcSet => MediaAsset is null
+        ? String.Empty
+        : String.Join(", ", MediaAsset.Variants
+            .Where(x => x.Type is "360x360" or "720x720" or "sample" && !String.IsNullOrEmpty(x.Url) && x.Width > 0)
+            .Select(x => $"{x.Url} {x.Width}w"));
 
     public bool IsImage => !(FileExt.Equals("webm") || FileExt.Equals("mp4") || FileExt.Equals("zip"));
 }
