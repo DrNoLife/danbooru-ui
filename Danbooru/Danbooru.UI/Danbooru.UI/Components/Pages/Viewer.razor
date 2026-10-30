@@ -116,7 +116,14 @@
                     <a class="btn btn-square" href="@Links.Browse(similar)" aria-label="Posts with @similar" title="Similar: @similar (S)"><Icon Name="similar" StrokeWidth="1.8" /></a>
                 }
                 <button type="button" class="btn btn-square" aria-label="Copy link" title="Copy link (C)" @onclick="CopyLinkAsync"><Icon Name="link" StrokeWidth="1.8" /></button>
+                <button type="button" class="btn btn-square" aria-label="Copy tags as an AI image prompt" title="Copy as AI prompt (P)" @onclick="CopyPromptAsync"><Icon Name="sparkle" StrokeWidth="1.8" /></button>
             </div>
+
+            <details class="prompt-box">
+                <summary class="section-label">AI prompt</summary>
+                <p class="mono">@PromptBuilder.Build(details)</p>
+                <button type="button" class="btn" @onclick="CopyPromptAsync"><Icon Name="sparkle" Size="16" StrokeWidth="1.8" />Copy prompt</button>
+            </details>
 
             <TagList Title="Copyright" Category="3" Tags="details.TagsCopyright" />
             <TagList Title="Character" Category="4" Tags="details.TagsCharacter" />
@@ -135,7 +142,7 @@
                         <a href="@source" target="_blank" rel="noopener noreferrer">Source</a>
                     }
                 </div>
-                <div class="keys"><span>← → browse</span><span>I details</span><span>F fullscreen</span><span>Esc back</span></div>
+                <div class="keys"><span>← → browse</span><span>I details</span><span>F fullscreen</span><span>P prompt</span><span>Esc back</span></div>
             </div>
         </aside>
 
@@ -342,6 +349,9 @@
             case "c":
                 await CopyLinkAsync();
                 break;
+            case "p" when Post is not null:
+                await CopyPromptAsync();
+                break;
             default:
                 return false;
         }
@@ -354,6 +364,12 @@
     {
         await Js.CopyTextAsync(Navigation.Uri);
         await ShowToastAsync("Link copied");
+    }
+
+    private async Task CopyPromptAsync()
+    {
+        await Js.CopyTextAsync(PromptBuilder.Build(Post!));
+        await ShowToastAsync("Prompt copied");
     }
 
     private async Task ShareAsync()
