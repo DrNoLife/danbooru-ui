@@ -1,6 +1,7 @@
 @using Danbooru.UI.Models
 @implements IDisposable
 @inject Preferences Preferences
+@inject KeyboardShortcuts Shortcuts
 
 <div class="rating-button">
     <button type="button" class="rating-trigger" aria-haspopup="true" aria-expanded="@(_open ? "true" : "false")" aria-label="Content rating: @Preferences.Ratings.Label()" @onclick="() => _open = !_open">
@@ -33,9 +34,29 @@
 
     private bool _open;
 
-    protected override void OnInitialized() => Preferences.Changed += OnPreferencesChanged;
+    protected override void OnInitialized()
+    {
+        Preferences.Changed += OnPreferencesChanged;
+        Shortcuts.KeyPressed += OnKeyAsync;
+    }
+
+    private Task<bool> OnKeyAsync(string key)
+    {
+        if (key != "Escape" || !_open)
+        {
+            return Task.FromResult(false);
+        }
+
+        _open = false;
+        OnPreferencesChanged();
+        return Task.FromResult(true);
+    }
 
     private void OnPreferencesChanged() => InvokeAsync(StateHasChanged);
 
-    public void Dispose() => Preferences.Changed -= OnPreferencesChanged;
+    public void Dispose()
+    {
+        Preferences.Changed -= OnPreferencesChanged;
+        Shortcuts.KeyPressed -= OnKeyAsync;
+    }
 }

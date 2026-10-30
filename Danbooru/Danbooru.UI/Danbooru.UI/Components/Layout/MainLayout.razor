@@ -4,9 +4,13 @@
 @inject SearchSession Session
 @inject ImejiJs Js
 
-@Body
+@* While the search palette is open, the page behind it can't be clicked or tabbed into. *@
+<div class="app-root" inert="@Session.IsPaletteOpen">
+    @Body
+</div>
 
 <SearchPalette />
+<ReconnectModal />
 
 <div id="blazor-error-ui" role="alert">
     Something went wrong.
@@ -19,7 +23,11 @@
     private IJSObjectReference? _shortcutsHandle;
     private IJSObjectReference? _scrollHandle;
 
-    protected override void OnInitialized() => Shortcuts.KeyPressed += OnKeyAsync;
+    protected override void OnInitialized()
+    {
+        Shortcuts.KeyPressed += OnKeyAsync;
+        Session.Changed += OnSessionChanged;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -31,36 +39,29 @@
         }
     }
 
-    private Task OnKeyAsync(string key)
-    {
-        if (key is "mod+k" or "/" && !Session.IsPaletteOpen)
-        {
-            Session.OpenPalette();
-        }
+    private void OnSessionChanged() => InvokeAsync(StateHasChanged);
 
-        return Task.CompletedTask;
+    private Task<bool> OnKeyAsync(string key)
+    {
+        switch (key)
+        {
+            case "mod+k" or "/" when !Session.IsPaletteOpen:
+                Session.OpenPalette();
+                return Task.FromResult(true);
+            case "Escape" when Session.IsPaletteOpen:
+                Session.ClosePalette();
+                return Task.FromResult(true);
+            default:
+                return Task.FromResult(false);
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
         Shortcuts.KeyPressed -= OnKeyAsync;
-
-        try
-        {
-            foreach (var handle in new[] { _shortcutsHandle, _scrollHandle })
-            {
-                if (handle is not null)
-                {
-                    await handle.InvokeVoidAsync("dispose");
-                    await handle.DisposeAsync();
-                }
-            }
-        }
-        catch (JSDisconnectedException)
-        {
-            // The circuit is gone, so there is nothing left to clean up in the browser.
-        }
-
+        Session.Changed -= OnSessionChanged;
+        await _shortcutsHandle.DisposeHandleAsync();
+        await _scrollHandle.DisposeHandleAsync();
         _shortcutsReference?.Dispose();
     }
 }

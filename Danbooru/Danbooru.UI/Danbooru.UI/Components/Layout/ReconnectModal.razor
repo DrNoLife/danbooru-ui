@@ -1,0 +1,16 @@
+@* Shown by Blazor while the connection to the server is lost, e.g. after a phone wakes up. Styled in app.css. *@
+<script type="module" src="@Assets["Components/Layout/ReconnectModal.razor.js"]"></script>
+
+<dialog id="components-reconnect-modal" data-nosnippet>
+    <div class="reconnect-box">
+        <div class="reconnect-spinner" aria-hidden="true"></div>
+        <p class="reconnect-first-attempt">Reconnecting…</p>
+        <p class="reconnect-retrying">Still trying to reconnect. Next attempt in <span id="components-seconds-to-next-attempt"></span> s.</p>
+        <p class="reconnect-failed">Lost the connection to Imeji.</p>
+        <button type="button" id="components-reconnect-button" class="btn btn-accent reconnect-failed">Try again</button>
+        <p class="reconnect-paused">The session was paused to save resources.</p>
+        <button type="button" id="components-resume-button" class="btn btn-accent reconnect-paused">Resume</button>
+        <p class="reconnect-resume-failed">Could not resume the session.</p>
+        <button type="button" class="btn reconnect-resume-failed" onclick="location.reload()">Reload</button>
+    </div>
+</dialog>

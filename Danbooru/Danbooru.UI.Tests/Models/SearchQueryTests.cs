@@ -55,6 +55,27 @@ public class SearchQueryTests
     }
 
     [Fact]
+    public void SortOrder_ShouldCountTowardTheTagLimit()
+    {
+        var query = SearchQuery.Parse("a b", SortOrder.Score);
+
+        query.IsOverTagLimit.Should().BeTrue();
+        query.ToDanbooruQuery(Rating.All).Should().Be("a b order:score");
+    }
+
+    [Fact]
+    public void WithInclude_ShouldKeepTheSortOrder()
+    {
+        SearchQuery.Parse("a", SortOrder.Hot).WithInclude("b").Order.Should().Be(SortOrder.Hot);
+    }
+
+    [Fact]
+    public void Equality_ShouldIncludeTheSortOrder()
+    {
+        SearchQuery.Parse("a", SortOrder.Hot).Should().NotBe(SearchQuery.Parse("a"));
+    }
+
+    [Fact]
     public void Equality_ShouldCompareTags()
     {
         SearchQuery.Parse("a -b").Should().Be(new SearchQuery(["a"], ["b"]));

@@ -32,7 +32,7 @@
     {
         get
         {
-            var tags = Post.Tags.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(3).Select(x => x.Replace('_', ' '));
+            var tags = Post.TopTags.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(3).Select(x => x.Replace('_', ' '));
             return $"Post {Post.Id}: {String.Join(", ", tags)}";
         }
     }

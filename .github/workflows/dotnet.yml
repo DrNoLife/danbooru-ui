@@ -49,6 +49,10 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
+      # The browser tests (Danbooru.UI.E2ETests) need Chromium and its system libraries.
+      - name: Install Playwright Chromium
+        run: pwsh Danbooru.UI.E2ETests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+
       - name: Test
         run: dotnet test --no-build --configuration Release
 

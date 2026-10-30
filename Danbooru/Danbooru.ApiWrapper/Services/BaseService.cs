@@ -1,10 +1,11 @@
 ﻿using Danbooru.ApiWrapper.Interfaces;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
 namespace Danbooru.ApiWrapper.Services;
 
-public abstract class BaseService(ILogger<IBaseService> logger, IHttpClientFactory httpClientFactory) : IBaseService
+public abstract class BaseService(ILogger<IBaseService> logger, IHttpClientFactory httpClientFactory, HybridCache? cache = null) : IBaseService
 {
     public const string HttpClientName = "danbooru";
 
@@ -25,5 +26,20 @@ public abstract class BaseService(ILogger<IBaseService> logger, IHttpClientFacto
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Like <see cref="GetFromApiAsync{T}"/>, but answers repeated requests for the same uri from the cache for a while.
+    /// Failed requests are not cached. Without a cache (e.g. in tests) every call goes to the API.
+    /// </summary>
+    protected async Task<T?> GetCachedAsync<T>(string uri, TimeSpan duration, CancellationToken cancellationToken = default)
+    {
+        if (cache is null)
+        {
+            return await GetFromApiAsync<T>(uri, cancellationToken);
+        }
+
+        var options = new HybridCacheEntryOptions { Expiration = duration, LocalCacheExpiration = duration };
+        return await cache.GetOrCreateAsync(uri, async token => await GetFromApiAsync<T>(uri, token), options, cancellationToken: cancellationToken);
     }
 }

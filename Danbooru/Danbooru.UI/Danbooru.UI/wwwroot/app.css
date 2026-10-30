@@ -486,6 +486,25 @@ kbd {
     font-size: 13px;
 }
 
+.sort-option {
+    color: var(--text-soft);
+}
+
+.sort-option:hover {
+    color: var(--text);
+}
+
+.sort-option[aria-current="true"] {
+    border-color: transparent;
+    background: var(--surface-3);
+    color: var(--text);
+    font-weight: 600;
+}
+
+.sort-option[aria-disabled="true"] {
+    opacity: 0.4;
+}
+
 .rating-menu p {
     font-size: 12px;
     color: var(--muted);
@@ -1308,6 +1327,69 @@ html:has(.feed) {
     scroll-snap-align: end;
 }
 
+/* ===== Reconnect dialog (Components/Layout/ReconnectModal.razor) ===== */
+
+#components-reconnect-modal {
+    border: 1px solid var(--line-strong);
+    border-radius: 18px;
+    padding: 24px;
+    width: min(360px, calc(100vw - 32px));
+    background: #141416;
+    color: var(--text);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+}
+
+#components-reconnect-modal::backdrop {
+    background: rgba(5, 5, 6, 0.7);
+}
+
+.reconnect-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    text-align: center;
+}
+
+.reconnect-box > *:not(.reconnect-spinner) {
+    display: none;
+}
+
+.reconnect-spinner {
+    display: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 3px solid var(--surface-3);
+    border-top-color: var(--accent);
+    animation: reconnect-spin 0.8s linear infinite;
+}
+
+#components-reconnect-modal.components-reconnect-show .reconnect-spinner,
+#components-reconnect-modal.components-reconnect-retrying .reconnect-spinner,
+#components-reconnect-modal.components-reconnect-show .reconnect-first-attempt,
+#components-reconnect-modal.components-reconnect-retrying .reconnect-retrying,
+#components-reconnect-modal.components-reconnect-failed .reconnect-failed,
+#components-reconnect-modal.components-reconnect-paused .reconnect-paused,
+#components-reconnect-modal.components-reconnect-resume-failed .reconnect-resume-failed {
+    display: block;
+}
+
+#components-reconnect-modal.components-reconnect-failed .btn.reconnect-failed,
+#components-reconnect-modal.components-reconnect-paused .btn.reconnect-paused,
+#components-reconnect-modal.components-reconnect-resume-failed .btn.reconnect-resume-failed {
+    display: inline-flex;
+}
+
+/* Retrying can be added on top of show; then only the retry text applies. */
+#components-reconnect-modal.components-reconnect-retrying .reconnect-first-attempt {
+    display: none;
+}
+
+@keyframes reconnect-spin {
+    to { transform: rotate(360deg); }
+}
+
 /* ===== Error UI ===== */
 
 #blazor-error-ui {
@@ -1446,7 +1528,7 @@ html:has(.feed) {
         display: none;
     }
 
-    .app-header .rating-button {
+    .app-header > .rating-button:first-of-type {
         margin-left: auto;
     }
 

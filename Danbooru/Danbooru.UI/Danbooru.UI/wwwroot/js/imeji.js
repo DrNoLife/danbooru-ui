@@ -49,6 +49,10 @@ export function registerShortcuts(dotNetHelper) {
     };
 
     document.addEventListener('keydown', onKeyDown);
+
+    // Marks the page as interactive; the end-to-end tests wait for it before clicking.
+    document.documentElement.dataset.interactive = '';
+
     return { dispose: () => document.removeEventListener('keydown', onKeyDown) };
 }
 
@@ -136,6 +140,83 @@ export function restoreScroll() {
 
     window.scrollTo({ top: y, behavior: 'instant' });
     return true;
+}
+
+// Reports one-finger swipes on an element as "left", "right" or "up" through a JSInvokable OnSwipe(string).
+// Pinches and mostly-diagonal drags are ignored, so zooming and scrolling still work.
+export function attachSwipe(element, dotNetHelper) {
+    let start = null;
+
+    const onStart = (event) => {
+        start = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
+    };
+
+    const onEnd = (event) => {
+        if (!start || event.changedTouches.length !== 1) {
+            return;
+        }
+
+        const dx = event.changedTouches[0].clientX - start.x;
+        const dy = event.changedTouches[0].clientY - start.y;
+        start = null;
+
+        if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+            dotNetHelper.invokeMethodAsync('OnSwipe', dx < 0 ? 'left' : 'right');
+        } else if (dy < -80 && Math.abs(dy) > Math.abs(dx) * 1.5) {
+            dotNetHelper.invokeMethodAsync('OnSwipe', 'up');
+        }
+    };
+
+    element.addEventListener('touchstart', onStart, { passive: true });
+    element.addEventListener('touchend', onEnd, { passive: true });
+
+    return {
+        dispose: () => {
+            element.removeEventListener('touchstart', onStart);
+            element.removeEventListener('touchend', onEnd);
+        },
+    };
+}
+
+// Warms the browser cache for images the user is likely to open next.
+export function preloadImages(urls) {
+    for (const url of urls) {
+        if (url) {
+            new Image().src = url;
+        }
+    }
+}
+
+// Plays feed videos (muted) while they fill most of the screen and pauses them when scrolled away.
+// Watches for slides added later by infinite scrolling.
+export function autoplayVideos() {
+    const visibility = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+            const video = entry.target;
+            if (entry.isIntersecting) {
+                video.muted = true;
+                video.play().catch(() => { /* Autoplay blocked; the controls still work. */ });
+            } else {
+                video.pause();
+            }
+        }
+    }, { threshold: 0.6 });
+
+    const observeAll = () => document.querySelectorAll('.feed-slide video:not([data-autoplay])').forEach(video => {
+        video.dataset.autoplay = '';
+        visibility.observe(video);
+    });
+
+    const additions = new MutationObserver(observeAll);
+    additions.observe(document.body, { childList: true, subtree: true });
+    observeAll();
+
+    return {
+        dispose: () => {
+            additions.disconnect();
+            visibility.disconnect();
+        },
+    };
 }
 
 export function scrollToTop() {

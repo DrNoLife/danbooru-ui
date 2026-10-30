@@ -5,6 +5,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="Danbooru.ApiWrapper.Tests/Danbooru.ApiWrapper.Tests.csproj" />
+    <Project Path="Danbooru.UI.E2ETests/Danbooru.UI.E2ETests.csproj" />
     <Project Path="Danbooru.UI.Tests/Danbooru.UI.Tests.csproj" />
   </Folder>
 </Solution>

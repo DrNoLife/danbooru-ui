@@ -1,5 +1,4 @@
-﻿using Danbooru.ApiWrapper.Enums;
-using Danbooru.ApiWrapper.Models;
+﻿using Danbooru.ApiWrapper.Models;
 using Danbooru.ApiWrapper.Models.Url;
 
 namespace Danbooru.ApiWrapper.Interfaces;
@@ -29,6 +28,4 @@ public interface IPostsService
     /// Counts the posts matching a raw Danbooru tag query. Null when Danbooru does not report a count.
     /// </summary>
     public Task<int?> CountAsync(string tagQuery, CancellationToken cancellationToken = default);
-
-    public Task<List<Post>> PerformSearchAfterPostsAsync(List<TagAutocomplete> tagsThatMustBeIncluded, ContentRating? contentRating, int lastPostId = -1, CancellationToken cancellationToken = default);
 }

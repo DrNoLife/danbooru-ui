@@ -8,7 +8,7 @@
         @foreach (var tag in Visible)
         {
             <div class="tag-row">
-                <a class="tag-cat-@Category" href="@Links.Browse(new SearchQuery([tag], []))">@tag</a>
+                <a class="tag-cat-@Category" href="@Links.Tag(tag)">@tag</a>
                 <a class="add" href="@Links.Browse(Session.Query.WithInclude(tag))" aria-label="Add @tag to the search" title="Add to search">+</a>
                 <a class="exclude" href="@Links.Browse(Session.Query.WithExclude(tag))" aria-label="Exclude @tag from the search" title="Exclude from search">−</a>
             </div>

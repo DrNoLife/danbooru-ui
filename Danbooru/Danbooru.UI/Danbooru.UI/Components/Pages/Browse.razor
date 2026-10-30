@@ -7,6 +7,7 @@
 @inject Preferences Preferences
 @inject ImejiJs Js
 @inject NavigationManager Navigation
+@inject KeyboardShortcuts Shortcuts
 @inject ILogger<Browse> Logger
 
 <PageTitle>@(_query.IsEmpty ? "Imeji" : $"{_query} · Imeji")</PageTitle>
@@ -117,6 +118,9 @@
     [SupplyParameterFromQuery(Name = "page")]
     public int? StartPage { get; set; }
 
+    [SupplyParameterFromQuery(Name = "order")]
+    public string? Order { get; set; }
+
     /// <summary>
     /// Carries the first page from prerendering to the interactive circuit.
     /// </summary>
@@ -153,11 +157,12 @@
     {
         Preferences.Changed += OnPreferencesChanged;
         Session.Changed += OnSessionChanged;
+        Shortcuts.KeyPressed += OnKeyAsync;
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        _query = SearchQuery.Parse(Tags);
+        _query = SearchQuery.Parse(Tags, SortOrderExtensions.Parse(Order));
         Session.SetQuery(_query);
         await LoadIfSearchChangedAsync();
     }
@@ -184,6 +189,7 @@
         {
             _total = cache.Total;
             _reachedEnd = cache.ReachedEnd;
+            _related = cache.Related;
             cache.Pages.ForEach(AddPage);
             _restoredFromCache = true;
             return;
@@ -192,6 +198,7 @@
         if (Snapshot is { } snapshot && snapshot.Key == SearchKey)
         {
             _total = snapshot.Total;
+            _related = snapshot.Related;
             AddPage(snapshot.FirstPage);
             return;
         }
@@ -204,11 +211,11 @@
 
         if (page is not null)
         {
-            Snapshot = new BrowseSnapshot(SearchKey, page, _total);
+            Snapshot = new BrowseSnapshot(SearchKey, page, _total, _related);
         }
     }
 
-    private void UpdateCache() => Session.BrowseCache = new BrowseCache(SearchKey, [.. _pages], _total, _reachedEnd);
+    private void UpdateCache() => Session.BrowseCache = new BrowseCache(SearchKey, [.. _pages], _total, _reachedEnd, _related);
 
     private async Task<int?> CountAsync()
     {
@@ -249,6 +256,12 @@
                 return null;
             }
 
+            // Worked out here, while the posts still carry all their tags; summaries keep only a few.
+            if (_pages.Count == 0)
+            {
+                _related = PostSummary.RelatedTags(posts, _query);
+            }
+
             var page = new PostPage(number, posts.Select(PostSummary.From).ToList());
             AddPage(page);
             return page;
@@ -271,28 +284,18 @@
 
         var all = _pages.SelectMany(x => x.Posts).Where(x => x.HasMedia).ToList();
         Session.SetResults(all, _total);
-
-        if (_pages.Count == 1)
-        {
-            _related = RelatedTags(page.Posts);
-        }
     }
 
-    /// <summary>
-    /// The tags that show up most often in the results, as suggestions for narrowing the search.
-    /// </summary>
-    private List<string> RelatedTags(IEnumerable<PostSummary> posts)
+    private Task<bool> OnKeyAsync(string key)
     {
-        var current = _query.Include.Concat(_query.Exclude).ToHashSet();
-        return posts
-            .SelectMany(x => x.Tags.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-            .Where(x => !current.Contains(x))
-            .GroupBy(x => x)
-            .Where(x => x.Count() >= 3)
-            .OrderByDescending(x => x.Count())
-            .Take(7)
-            .Select(x => x.Key)
-            .ToList();
+        if (key != "Escape" || !_jumpOpen)
+        {
+            return Task.FromResult(false);
+        }
+
+        _jumpOpen = false;
+        InvokeAsync(StateHasChanged);
+        return Task.FromResult(true);
     }
 
     private async Task<bool> LoadNextPageAsync()
@@ -370,19 +373,8 @@
     {
         Preferences.Changed -= OnPreferencesChanged;
         Session.Changed -= OnSessionChanged;
-
-        if (_pageTracker is not null)
-        {
-            try
-            {
-                await _pageTracker.InvokeVoidAsync("dispose");
-                await _pageTracker.DisposeAsync();
-            }
-            catch (JSDisconnectedException)
-            {
-                // The circuit is gone, so there is nothing left to clean up in the browser.
-            }
-        }
+        Shortcuts.KeyPressed -= OnKeyAsync;
+        await _pageTracker.DisposeHandleAsync();
 
         _selfReference?.Dispose();
     }

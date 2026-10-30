@@ -16,6 +16,9 @@ public static class IServiceCollectionExtensions
         // Retries transient failures (5xx, 408, 429) with backoff, and adds timeouts and a circuit breaker.
         .AddStandardResilienceHandler();
 
+        // In-memory cache for repeated lookups (autocomplete, counts, single posts), see BaseService.GetCachedAsync.
+        services.AddHybridCache();
+
         services.AddScoped<IPostsService, PostsService>();
         services.AddScoped<ITagsService, TagsService>();
         services.AddScoped<IDanbooruWrapper, DanbooruWrapper>();

@@ -3,7 +3,7 @@
 @using Danbooru.ApiWrapper.Models
 @using Danbooru.UI.Models
 @using System.Net
-@implements IDisposable
+@implements IAsyncDisposable
 @inject IDanbooruWrapper Danbooru
 @inject SearchSession Session
 @inject KeyboardShortcuts Shortcuts
@@ -100,7 +100,7 @@
             <div class="aside-head">
                 @foreach (var artist in details.TagsArtist)
                 {
-                    <a class="artist" href="@Links.Browse(new SearchQuery([artist], []))">@artist</a>
+                    <a class="artist" href="@Links.Tag(artist)">@artist</a>
                 }
                 @if (RatingExtensions.FromLetter(details.Rating) is var rating && rating != Rating.None)
                 {
@@ -171,6 +171,9 @@
     public Post? Post { get; set; }
 
     private ElementReference _stage;
+    private DotNetObjectReference<Viewer>? _selfReference;
+    private IJSObjectReference? _swipeHandle;
+    private int _preloadedFor;
     private bool _zoomed;
     private bool _showDetails = true;
     private bool _notFound;
@@ -262,13 +265,52 @@
         }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _selfReference = DotNetObjectReference.Create(this);
+            _swipeHandle = await Js.AttachSwipeAsync(_stage, _selfReference);
+        }
+
+        // Fetch the neighbours' images now, so stepping to them shows the picture straight away.
+        if (Post is not null && _preloadedFor != Id)
+        {
+            _preloadedFor = Id;
+            await Js.PreloadImagesAsync(new[] { Next, Previous }.Where(x => x is { IsVideo: false }).Select(x => x!.SampleUrl));
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnSwipe(string direction)
+    {
+        // A zoomed image pans with the finger, so swipes belong to it.
+        if (_zoomed)
+        {
+            return;
+        }
+
+        switch (direction)
+        {
+            case "left" when Next is not null:
+                Navigation.NavigateTo(Links.Post(Next.Id));
+                break;
+            case "right" when Previous is not null:
+                Navigation.NavigateTo(Links.Post(Previous.Id));
+                break;
+            case "up":
+                await Js.ScrollIntoViewAsync("#details");
+                break;
+        }
+    }
+
     private void ToggleZoom() => _zoomed = !_zoomed;
 
-    private async Task OnKeyAsync(string key)
+    private async Task<bool> OnKeyAsync(string key)
     {
         if (Session.IsPaletteOpen)
         {
-            return;
+            return false;
         }
 
         switch (key)
@@ -301,10 +343,11 @@
                 await CopyLinkAsync();
                 break;
             default:
-                return;
+                return false;
         }
 
         await InvokeAsync(StateHasChanged);
+        return true;
     }
 
     private async Task CopyLinkAsync()
@@ -333,5 +376,10 @@
 
     private static string FormatSize(int bytes) => bytes >= 1024 * 1024 ? $"{bytes / (1024.0 * 1024):0.0} MB" : $"{bytes / 1024} KB";
 
-    public void Dispose() => Shortcuts.KeyPressed -= OnKeyAsync;
+    public async ValueTask DisposeAsync()
+    {
+        Shortcuts.KeyPressed -= OnKeyAsync;
+        await _swipeHandle.DisposeHandleAsync();
+        _selfReference?.Dispose();
+    }
 }

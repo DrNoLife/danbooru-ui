@@ -25,6 +25,7 @@
         <a class="seg-item" href="@Links.Feed(Session.Query)" aria-current="@(View == "feed" ? "page" : null)"><Icon Name="feed" Size="15" StrokeWidth="2" />Feed</a>
     </nav>
 
+    <SortMenu View="@View" />
     <RatingMenu />
 
     @if (View == "grid")

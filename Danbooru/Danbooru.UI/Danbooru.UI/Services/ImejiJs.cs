@@ -48,6 +48,19 @@ public sealed class ImejiJs(IJSRuntime js) : IAsyncDisposable
     /// </summary>
     public async Task<bool> RestoreScrollAsync() => await (await Module).InvokeAsync<bool>("restoreScroll");
 
+    /// <summary>
+    /// Reports swipes on the element through a JSInvokable OnSwipe(string direction). Dispose the result to stop.
+    /// </summary>
+    public async Task<IJSObjectReference> AttachSwipeAsync<T>(ElementReference element, DotNetObjectReference<T> target) where T : class =>
+        await (await Module).InvokeAsync<IJSObjectReference>("attachSwipe", element, target);
+
+    public async Task PreloadImagesAsync(IEnumerable<string> urls) => await (await Module).InvokeVoidAsync("preloadImages", urls.ToArray());
+
+    /// <summary>
+    /// Plays feed videos while they are on screen. Dispose the result to stop.
+    /// </summary>
+    public async Task<IJSObjectReference> AutoplayVideosAsync() => await (await Module).InvokeAsync<IJSObjectReference>("autoplayVideos");
+
     public async Task ScrollToTopAsync() => await (await Module).InvokeVoidAsync("scrollToTop");
 
     /// <param name="block">"start" or "center", as in Element.scrollIntoView.</param>
