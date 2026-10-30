@@ -1,0 +1,17 @@
+@using Danbooru.UI.Models
+@inject SearchSession Session
+
+@* Phone navigation. Hidden by CSS on wider screens, where the header has the same links. *@
+<nav class="bottom-nav" aria-label="Main">
+    <a href="@Links.Browse(Session.Query)" aria-current="@(Current == "grid" ? "page" : null)"><Icon Name="grid" Size="24" StrokeWidth="1.8" />Browse</a>
+    <button type="button" @onclick="Session.OpenPalette"><Icon Name="search" Size="24" StrokeWidth="1.8" />Search</button>
+    <a href="@Links.Feed(Session.Query)" aria-current="@(Current == "feed" ? "page" : null)"><Icon Name="feed" Size="24" StrokeWidth="1.8" />Feed</a>
+</nav>
+
+@code {
+    /// <summary>
+    /// "grid" or "feed".
+    /// </summary>
+    [Parameter]
+    public string Current { get; set; } = "grid";
+}

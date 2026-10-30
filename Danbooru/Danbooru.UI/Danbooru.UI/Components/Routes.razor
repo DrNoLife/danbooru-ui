@@ -1,6 +1,17 @@
-﻿<Router AppAssembly="@typeof(Program).Assembly" AdditionalAssemblies="new[] { typeof(Client._Imports).Assembly }">
+﻿@inject Services.Preferences PreferencesService
+
+<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
     </Found>
 </Router>
+
+@code {
+    /// <summary>
+    /// The preferences cookie, read by App. A root component parameter, so it reaches the interactive circuit too.
+    /// </summary>
+    [Parameter]
+    public string? Preferences { get; set; }
+
+    protected override void OnInitialized() => PreferencesService.Load(Preferences);
+}

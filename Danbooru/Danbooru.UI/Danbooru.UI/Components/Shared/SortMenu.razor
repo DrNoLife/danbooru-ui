@@ -1,0 +1,73 @@
+@using Danbooru.UI.Models
+@implements IDisposable
+@inject SearchSession Session
+@inject KeyboardShortcuts Shortcuts
+
+<div class="rating-button">
+    <button type="button" class="rating-trigger" aria-haspopup="true" aria-expanded="@(_open ? "true" : "false")" aria-label="Sort: @Session.Query.Order.Label()" @onclick="() => _open = !_open">
+        <Icon Name="sort" Size="16" StrokeWidth="2" />
+        <span class="rating-label">@Session.Query.Order.Label()</span>
+        <Icon Name="chevron-down" Size="14" StrokeWidth="2.2" />
+    </button>
+
+    @if (_open)
+    {
+        <button type="button" class="popover-dismiss" aria-label="Close sort menu" @onclick="() => _open = false"></button>
+        <div class="popover rating-menu" role="group" aria-label="Sort">
+            <p>Sort posts by</p>
+            @foreach (var order in SortOrderExtensions.Each)
+            {
+                var query = Session.Query.WithOrder(order);
+                @if (query.IsOverTagLimit)
+                {
+                    <span class="rating-toggle sort-option" aria-disabled="true">@order.Label()</span>
+                }
+                else
+                {
+                    <a class="rating-toggle sort-option" href="@(View == "feed" ? Links.Feed(query) : Links.Browse(query))"
+                       aria-current="@(order == Session.Query.Order ? "true" : null)" @onclick="() => _open = false">@order.Label()</a>
+                }
+            }
+            @if (Session.Query.WithOrder(SortOrder.Score).IsOverTagLimit)
+            {
+                <p>Sorting uses one of the @SearchQuery.AnonymousTagLimit tags Danbooru allows without an account.</p>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// "grid" or "feed": where the sort links lead.
+    /// </summary>
+    [Parameter]
+    public string View { get; set; } = "grid";
+
+    private bool _open;
+
+    protected override void OnInitialized()
+    {
+        Session.Changed += Refresh;
+        Shortcuts.KeyPressed += OnKeyAsync;
+    }
+
+    private Task<bool> OnKeyAsync(string key)
+    {
+        if (key != "Escape" || !_open)
+        {
+            return Task.FromResult(false);
+        }
+
+        _open = false;
+        Refresh();
+        return Task.FromResult(true);
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Session.Changed -= Refresh;
+        Shortcuts.KeyPressed -= OnKeyAsync;
+    }
+}

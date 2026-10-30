@@ -1,28 +1,24 @@
 ﻿using Danbooru.ApiWrapper.Interfaces;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
 namespace Danbooru.ApiWrapper.Services;
 
-public abstract class BaseService : IBaseService
+public abstract class BaseService(ILogger<IBaseService> logger, IHttpClientFactory httpClientFactory, HybridCache? cache = null) : IBaseService
 {
-    protected readonly ILogger<IBaseService> _logger;
-    protected readonly IHttpClientFactory _httpClientFactory;
-    protected readonly string _httpClientName = "danbooru";
+    public const string HttpClientName = "danbooru";
 
-    public BaseService(ILogger<IBaseService> logger, IHttpClientFactory httpClientFactory)
-    {
-        _logger = logger;
-        _httpClientFactory = httpClientFactory;
-    }
+    protected readonly ILogger<IBaseService> _logger = logger;
 
-    public async Task<T?> GetFromApiAsync<T>(string uri)
+    public async Task<T?> GetFromApiAsync<T>(string uri, CancellationToken cancellationToken = default)
     {
-        var client = _httpClientFactory.CreateClient(_httpClientName);
-        var response = await client.GetAsync(uri);
+        var client = httpClientFactory.CreateClient(HttpClientName);
+        using var response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
-        var contentString = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<T>(contentString);
+
+        await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        var result = await JsonSerializer.DeserializeAsync<T>(contentStream, cancellationToken: cancellationToken);
 
         if (result is null)
         {
@@ -30,5 +26,20 @@ public abstract class BaseService : IBaseService
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Like <see cref="GetFromApiAsync{T}"/>, but answers repeated requests for the same uri from the cache for a while.
+    /// Failed requests are not cached. Without a cache (e.g. in tests) every call goes to the API.
+    /// </summary>
+    protected async Task<T?> GetCachedAsync<T>(string uri, TimeSpan duration, CancellationToken cancellationToken = default)
+    {
+        if (cache is null)
+        {
+            return await GetFromApiAsync<T>(uri, cancellationToken);
+        }
+
+        var options = new HybridCacheEntryOptions { Expiration = duration, LocalCacheExpiration = duration };
+        return await cache.GetOrCreateAsync(uri, async token => await GetFromApiAsync<T>(uri, token), options, cancellationToken: cancellationToken);
     }
 }

@@ -2,5 +2,5 @@
 
 public interface IBaseService
 {
-    Task<T?> GetFromApiAsync<T>(string uri);
+    Task<T?> GetFromApiAsync<T>(string uri, CancellationToken cancellationToken = default);
 }

@@ -2,14 +2,8 @@
 
 namespace Danbooru.ApiWrapper.Services;
 
-public class DanbooruWrapper : IDanbooruWrapper
+public class DanbooruWrapper(IPostsService postsService, ITagsService tagsService) : IDanbooruWrapper
 {
-    public IPostsService Posts { get; init; }
-    public ITagsService Tags { get; init; }
-
-    public DanbooruWrapper(IPostsService postsService, ITagsService tagsService)
-    {
-        Posts = postsService;
-        Tags = tagsService;
-    }
+    public IPostsService Posts { get; init; } = postsService;
+    public ITagsService Tags { get; init; } = tagsService;
 }

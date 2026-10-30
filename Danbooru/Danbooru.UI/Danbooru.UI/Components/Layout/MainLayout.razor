@@ -1,19 +1,67 @@
-﻿@using Danbooru.UI.Client.Pages
-@inherits LayoutComponentBase
+﻿@inherits LayoutComponentBase
+@implements IAsyncDisposable
+@inject KeyboardShortcuts Shortcuts
+@inject SearchSession Session
+@inject ImejiJs Js
 
-<main>
+@* While the search palette is open, the page behind it can't be clicked or tabbed into. *@
+<div class="app-root" inert="@Session.IsPaletteOpen">
     @Body
-</main>
+</div>
 
-<div id="blazor-error-ui">
-    An unhandled error has occurred.
+<SearchPalette />
+<ReconnectModal />
+
+<div id="blazor-error-ui" role="alert">
+    Something went wrong.
     <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
+    <button type="button" class="dismiss" aria-label="Dismiss">×</button>
 </div>
 
 @code {
-    [Inject]
-    public ILogger<MainLayout> Logger { get; set; }
+    private DotNetObjectReference<KeyboardShortcuts>? _shortcutsReference;
+    private IJSObjectReference? _shortcutsHandle;
+    private IJSObjectReference? _scrollHandle;
 
-    
+    protected override void OnInitialized()
+    {
+        Shortcuts.KeyPressed += OnKeyAsync;
+        Session.Changed += OnSessionChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _shortcutsReference = DotNetObjectReference.Create(Shortcuts);
+            _shortcutsHandle = await Js.RegisterShortcutsAsync(_shortcutsReference);
+            _scrollHandle = await Js.RememberScrollOnLeaveAsync();
+        }
+    }
+
+    private void OnSessionChanged() => InvokeAsync(StateHasChanged);
+
+    private Task<bool> OnKeyAsync(string key)
+    {
+        switch (key)
+        {
+            case "mod+k" or "/" when !Session.IsPaletteOpen:
+                Session.OpenPalette();
+                return Task.FromResult(true);
+            case "Escape" when Session.IsPaletteOpen:
+                Session.ClosePalette();
+                return Task.FromResult(true);
+            default:
+                return Task.FromResult(false);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Shortcuts.KeyPressed -= OnKeyAsync;
+        Session.Changed -= OnSessionChanged;
+        await _shortcutsHandle.DisposeHandleAsync();
+        await _scrollHandle.DisposeHandleAsync();
+        _shortcutsReference?.Dispose();
+    }
 }

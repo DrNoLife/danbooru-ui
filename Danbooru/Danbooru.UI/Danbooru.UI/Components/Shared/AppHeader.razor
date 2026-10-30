@@ -1,0 +1,60 @@
+@using Danbooru.UI.Models
+@implements IDisposable
+@inject SearchSession Session
+@inject Preferences Preferences
+
+<header class="app-header @(View == "feed" ? "on-feed" : "")">
+    <a class="logo" href="/">imeji</a>
+
+    <button type="button" class="search-pill" aria-label="Search tags" @onclick="Session.OpenPalette">
+        <Icon Name="search" Size="17" />
+        @foreach (var tag in Session.Query.Include)
+        {
+            <span class="token static">@tag</span>
+        }
+        @foreach (var tag in Session.Query.Exclude)
+        {
+            <span class="token exclude static">−@tag</span>
+        }
+        <span class="placeholder">@(Session.Query.IsEmpty ? "Search tags…" : "Add tags…")</span>
+        <kbd>Ctrl K</kbd>
+    </button>
+
+    <nav class="seg view-switch" aria-label="View">
+        <a class="seg-item" href="@Links.Browse(Session.Query)" aria-current="@(View == "grid" ? "page" : null)"><Icon Name="grid" Size="15" StrokeWidth="2" />Grid</a>
+        <a class="seg-item" href="@Links.Feed(Session.Query)" aria-current="@(View == "feed" ? "page" : null)"><Icon Name="feed" Size="15" StrokeWidth="2" />Feed</a>
+    </nav>
+
+    <SortMenu View="@View" />
+    <RatingMenu />
+
+    @if (View == "grid")
+    {
+        <div class="seg header-size" role="group" aria-label="Thumbnail size">
+            <button type="button" class="seg-item seg-icon" aria-label="Smaller thumbnails" disabled="@(Preferences.SizeIndex == 0)" @onclick="() => Preferences.ChangeSizeAsync(-1)">−</button>
+            <button type="button" class="seg-item seg-icon" aria-label="Larger thumbnails" disabled="@(Preferences.SizeIndex == Preferences.RowHeights.Length - 1)" @onclick="() => Preferences.ChangeSizeAsync(1)">+</button>
+        </div>
+    }
+</header>
+
+@code {
+    /// <summary>
+    /// "grid" or "feed": which view switch item is current.
+    /// </summary>
+    [Parameter]
+    public string View { get; set; } = "grid";
+
+    protected override void OnInitialized()
+    {
+        Session.Changed += Refresh;
+        Preferences.Changed += Refresh;
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Session.Changed -= Refresh;
+        Preferences.Changed -= Refresh;
+    }
+}

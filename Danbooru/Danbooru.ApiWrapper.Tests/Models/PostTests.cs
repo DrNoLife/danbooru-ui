@@ -9,6 +9,7 @@ public class PostTests
     [Theory]
     [InlineData("", new string[] { })] 
     [InlineData("tag1 tag2", new[] { "tag1", "tag2" })] 
+    [InlineData(" tag1  tag2 ", new[] { "tag1", "tag2" })]
     public void TagsGeneral_ShouldReturnExpectedTags(string tagString, string[] expectedTags)
     {
         var post = new Post { TagStringGeneral = tagString };

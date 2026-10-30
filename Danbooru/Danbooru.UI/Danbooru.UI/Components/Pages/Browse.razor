@@ -1,0 +1,381 @@
+@page "/"
+@using Danbooru.ApiWrapper.Interfaces
+@using Danbooru.UI.Models
+@implements IAsyncDisposable
+@inject IDanbooruWrapper Danbooru
+@inject SearchSession Session
+@inject Preferences Preferences
+@inject ImejiJs Js
+@inject NavigationManager Navigation
+@inject KeyboardShortcuts Shortcuts
+@inject ILogger<Browse> Logger
+
+<PageTitle>@(_query.IsEmpty ? "Imeji" : $"{_query} · Imeji")</PageTitle>
+
+<AppHeader View="grid" />
+
+<section class="browse-title">
+    <h1>@(_query.IsEmpty ? "Latest" : _query.ToString())</h1>
+    @if (_total is int total)
+    {
+        <span class="muted">@total.ToString("N0") posts · @PageCount pages</span>
+    }
+    @if (!_query.IsEmpty)
+    {
+        <button type="button" class="icon-btn save-search" aria-pressed="@(Session.IsSaved(_query) ? "true" : "false")"
+                aria-label="@(Session.IsSaved(_query) ? "Remove saved search" : "Save search")" title="Save search"
+                @onclick="() => Session.ToggleSavedAsync(_query)">
+            <Icon Name="bookmark" Size="17" Filled="Session.IsSaved(_query)" />
+        </button>
+    }
+    @if (_related.Count > 0)
+    {
+        <span class="divider"></span>
+        <div class="refine">
+            <span class="refine-label">Refine</span>
+            @foreach (var tag in _related)
+            {
+                <a class="chip" href="@Links.Browse(_query.WithInclude(tag))" title="@(_query.WithInclude(tag).IsOverTagLimit ? "Danbooru allows 2 tags without an account" : null)"><span class="chip-plus">+</span>@tag</a>
+            }
+        </div>
+    }
+</section>
+
+<main class="browse-grid" style="--row-h: @(Preferences.RowHeight)px">
+    @if (_pages.Count == 0 && _error is not null)
+    {
+        <div class="status-message" role="alert">
+            <h2>No posts</h2>
+            <p>@_error</p>
+        </div>
+    }
+    else if (_pages.Count == 0 && _reachedEnd)
+    {
+        <div class="status-message">
+            <h2>Nothing found</h2>
+            <p>No posts match <span class="mono">@_query</span> with the ratings you picked.</p>
+        </div>
+    }
+
+    @foreach (var section in _pages)
+    {
+        <div class="page-marker @(section == _pages[0] && section.Number == 1 ? "first" : "")" data-page="@section.Number" id="page-@section.Number">
+            <span class="section-label">Page @section.Number</span>
+        </div>
+        <div class="jgrid">
+            @foreach (var post in section.Posts.Where(x => x.HasMedia))
+            {
+                <PostTile @key="post.Id" Post="post" RowHeight="Preferences.RowHeight" />
+            }
+        </div>
+    }
+
+    @if (_pages.Count > 0 && !_reachedEnd)
+    {
+        @if (_error is not null)
+        {
+            <p class="load-more-status" role="alert">@_error</p>
+        }
+        else
+        {
+            @* A new search restarts the trigger, since it stops once a search runs out of posts. *@
+            <InfiniteScrollTrigger @key="_generation" LoadMore="LoadNextPageAsync" />
+        }
+    }
+    else if (_pages.Count > 0)
+    {
+        <p class="load-more-status">That's everything.</p>
+    }
+</main>
+
+@if (_pages.Count > 0)
+{
+    <div class="page-pill glass">
+        <span>Page <strong>@_currentPage</strong>@(PageCount is int count ? $" of {count:N0}" : "")</span>
+        <div style="position: relative">
+            <button type="button" class="pill-btn" aria-expanded="@(_jumpOpen ? "true" : "false")" @onclick="() => _jumpOpen = !_jumpOpen">Jump to…</button>
+            @if (_jumpOpen)
+            {
+                <form class="popover jump-form" @onsubmit="Jump">
+                    <label for="jump-page" class="sr-only">Page number</label>
+                    <input id="jump-page" type="number" min="1" max="@(PageCount ?? SearchErrors.MaxPage)" inputmode="numeric" placeholder="Page" @bind="_jumpTarget" />
+                    <button type="submit" class="btn btn-accent" style="height: 38px">Go</button>
+                </form>
+            }
+        </div>
+        <button type="button" class="pill-btn round" aria-label="Back to top" @onclick="Js.ScrollToTopAsync"><Icon Name="chevron-up" Size="14" StrokeWidth="2.4" /></button>
+    </div>
+}
+
+<BottomNav Current="grid" />
+
+@code {
+    private const int PageSize = 50;
+
+    [SupplyParameterFromQuery(Name = "tags")]
+    public string? Tags { get; set; }
+
+    [SupplyParameterFromQuery(Name = "page")]
+    public int? StartPage { get; set; }
+
+    [SupplyParameterFromQuery(Name = "order")]
+    public string? Order { get; set; }
+
+    /// <summary>
+    /// Carries the first page from prerendering to the interactive circuit.
+    /// </summary>
+    [PersistentState]
+    public BrowseSnapshot? Snapshot { get; set; }
+
+    private SearchQuery _query = SearchQuery.Empty;
+    private readonly List<PostPage> _pages = [];
+    private List<string> _related = [];
+    private int? _total;
+    private string? _error;
+    private bool _reachedEnd;
+    private bool _isLoading;
+    private int _generation;
+    private string? _loadedKey;
+
+    private bool _restoredFromCache;
+    private int _currentPage = 1;
+    private bool _jumpOpen;
+    private int? _jumpTarget;
+
+    private DotNetObjectReference<Browse>? _selfReference;
+    private IJSObjectReference? _pageTracker;
+
+    private int? PageCount => _total is int total ? Math.Clamp((int)Math.Ceiling(total / (double)PageSize), 1, SearchErrors.MaxPage) : null;
+
+    private string DanbooruQuery => _query.ToDanbooruQuery(Preferences.Ratings);
+
+    private string SearchKey => $"{DanbooruQuery}|{FirstPageNumber}";
+
+    private int FirstPageNumber => Math.Clamp(StartPage ?? 1, 1, SearchErrors.MaxPage);
+
+    protected override void OnInitialized()
+    {
+        Preferences.Changed += OnPreferencesChanged;
+        Session.Changed += OnSessionChanged;
+        Shortcuts.KeyPressed += OnKeyAsync;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _query = SearchQuery.Parse(Tags, SortOrderExtensions.Parse(Order));
+        Session.SetQuery(_query);
+        await LoadIfSearchChangedAsync();
+    }
+
+    private async Task LoadIfSearchChangedAsync()
+    {
+        if (SearchKey == _loadedKey)
+        {
+            return;
+        }
+
+        _loadedKey = SearchKey;
+        _pages.Clear();
+        _related = [];
+        _total = null;
+        _error = null;
+        _reachedEnd = false;
+        _jumpOpen = false;
+        _currentPage = FirstPageNumber;
+        _generation++;
+
+        // Coming back from the viewer: show what was loaded before and scroll to the post that was open.
+        if (Session.BrowseCache is { } cache && cache.Key == SearchKey)
+        {
+            _total = cache.Total;
+            _reachedEnd = cache.ReachedEnd;
+            _related = cache.Related;
+            cache.Pages.ForEach(AddPage);
+            _restoredFromCache = true;
+            return;
+        }
+
+        if (Snapshot is { } snapshot && snapshot.Key == SearchKey)
+        {
+            _total = snapshot.Total;
+            _related = snapshot.Related;
+            AddPage(snapshot.FirstPage);
+            return;
+        }
+
+        var countTask = _query.IsEmpty ? Task.FromResult<int?>(null) : CountAsync();
+        var page = await FetchPageAsync(FirstPageNumber);
+        _total = await countTask;
+        Session.SetResults(Session.Results, _total);
+        UpdateCache();
+
+        if (page is not null)
+        {
+            Snapshot = new BrowseSnapshot(SearchKey, page, _total, _related);
+        }
+    }
+
+    private void UpdateCache() => Session.BrowseCache = new BrowseCache(SearchKey, [.. _pages], _total, _reachedEnd, _related);
+
+    private async Task<int?> CountAsync()
+    {
+        try
+        {
+            return await Danbooru.Posts.CountAsync(DanbooruQuery);
+        }
+        catch (HttpRequestException ex)
+        {
+            // The count is a nice-to-have; the grid works without it.
+            Logger.LogWarning(ex, "Counting posts failed.");
+            return null;
+        }
+    }
+
+    private async Task<PostPage?> FetchPageAsync(int number)
+    {
+        if (number > SearchErrors.MaxPage)
+        {
+            _reachedEnd = true;
+            return null;
+        }
+
+        var key = _loadedKey;
+        try
+        {
+            var posts = await Danbooru.Posts.SearchAsync(DanbooruQuery, number.ToString(), PageSize);
+
+            // The search changed while this page was loading.
+            if (key != _loadedKey)
+            {
+                return null;
+            }
+
+            if (posts.Count == 0)
+            {
+                _reachedEnd = true;
+                return null;
+            }
+
+            // Worked out here, while the posts still carry all their tags; summaries keep only a few.
+            if (_pages.Count == 0)
+            {
+                _related = PostSummary.RelatedTags(posts, _query);
+            }
+
+            var page = new PostPage(number, posts.Select(PostSummary.From).ToList());
+            AddPage(page);
+            return page;
+        }
+        catch (HttpRequestException ex)
+        {
+            Logger.LogWarning(ex, "Loading page {page} of {query} failed.", number, DanbooruQuery);
+            if (key == _loadedKey)
+            {
+                _error = SearchErrors.Describe(ex);
+            }
+
+            return null;
+        }
+    }
+
+    private void AddPage(PostPage page)
+    {
+        _pages.Add(page);
+
+        var all = _pages.SelectMany(x => x.Posts).Where(x => x.HasMedia).ToList();
+        Session.SetResults(all, _total);
+    }
+
+    private Task<bool> OnKeyAsync(string key)
+    {
+        if (key != "Escape" || !_jumpOpen)
+        {
+            return Task.FromResult(false);
+        }
+
+        _jumpOpen = false;
+        InvokeAsync(StateHasChanged);
+        return Task.FromResult(true);
+    }
+
+    private async Task<bool> LoadNextPageAsync()
+    {
+        if (_isLoading || _reachedEnd || _pages.Count == 0)
+        {
+            return false;
+        }
+
+        _isLoading = true;
+        try
+        {
+            var page = await FetchPageAsync(_pages[^1].Number + 1);
+            UpdateCache();
+
+            // Called from JS interop, which does not re-render on its own.
+            StateHasChanged();
+            return page is not null;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    [JSInvokable]
+    public void SetCurrentPage(int page)
+    {
+        _currentPage = page;
+        StateHasChanged();
+    }
+
+    private void Jump()
+    {
+        if (_jumpTarget is not int target)
+        {
+            return;
+        }
+
+        _jumpOpen = false;
+        Navigation.NavigateTo(Links.Browse(_query, Math.Clamp(target, 1, PageCount ?? SearchErrors.MaxPage)));
+    }
+
+    private void OnPreferencesChanged() => InvokeAsync(async () =>
+    {
+        // A new rating set is a new search; a new thumbnail size only needs a re-render.
+        await LoadIfSearchChangedAsync();
+        StateHasChanged();
+    });
+
+    private void OnSessionChanged() => InvokeAsync(StateHasChanged);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _selfReference = DotNetObjectReference.Create(this);
+            _pageTracker = await Js.TrackPagesAsync(_selfReference);
+            await Session.EnsureStorageLoadedAsync();
+            StateHasChanged();
+        }
+
+        // Back where the grid was left. Without a saved position (e.g. after Esc in the viewer), show the post that was open.
+        if (_restoredFromCache)
+        {
+            _restoredFromCache = false;
+            if (!await Js.RestoreScrollAsync() && Session.LastViewedPostId is int postId)
+            {
+                await Js.ScrollIntoViewAsync($"#post-{postId}", "center", smooth: false);
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Preferences.Changed -= OnPreferencesChanged;
+        Session.Changed -= OnSessionChanged;
+        Shortcuts.KeyPressed -= OnKeyAsync;
+        await _pageTracker.DisposeHandleAsync();
+
+        _selfReference?.Dispose();
+    }
+}

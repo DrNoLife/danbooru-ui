@@ -4,7 +4,7 @@ namespace Danbooru.ApiWrapper.Models;
 
 public class MediaAsset
 {
-    [JsonPropertyName("Id")]
+    [JsonPropertyName("id")]
     public int Id { get; set; }
 
     [JsonPropertyName("created_at")]
@@ -29,7 +29,7 @@ public class MediaAsset
     public int Height { get; set; }
 
     [JsonPropertyName("duration")]
-    public object Duration { get; set; } = String.Empty;
+    public double? Duration { get; set; }
 
     [JsonPropertyName("status")]
     public string Status { get; set; } = String.Empty;

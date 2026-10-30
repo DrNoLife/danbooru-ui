@@ -1,0 +1,56 @@
+﻿@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+@* Invisible marker after the last item. When it scrolls into view, LoadMore is called. *@
+<div @ref="_sentinel" class="infinite-scroll-sentinel"></div>
+
+@code {
+    /// <summary>
+    /// Loads the next batch of items. Return false when nothing more was loaded, which stops the trigger.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public Func<Task<bool>> LoadMore { get; set; } = null!;
+
+    private ElementReference _sentinel;
+    private IJSObjectReference? _module;
+    private IJSObjectReference? _observer;
+    private DotNetObjectReference<InfiniteScrollTrigger>? _selfReference;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _selfReference = DotNetObjectReference.Create(this);
+        _module = await JS.InvokeAsync<IJSObjectReference>("import", "./Components/InfiniteScrollTrigger.razor.js");
+        _observer = await _module.InvokeAsync<IJSObjectReference>("observe", _sentinel, _selfReference);
+    }
+
+    [JSInvokable]
+    public Task<bool> OnSentinelVisible() => LoadMore();
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_observer is not null)
+            {
+                await _observer.InvokeVoidAsync("dispose");
+                await _observer.DisposeAsync();
+            }
+
+            if (_module is not null)
+            {
+                await _module.DisposeAsync();
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is gone, so there is nothing left to clean up in the browser.
+        }
+
+        _selfReference?.Dispose();
+    }
+}

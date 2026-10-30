@@ -1,0 +1,327 @@
+@page "/feed"
+@using Danbooru.ApiWrapper.Interfaces
+@using Danbooru.UI.Models
+@implements IAsyncDisposable
+@inject IDanbooruWrapper Danbooru
+@inject SearchSession Session
+@inject Preferences Preferences
+@inject KeyboardShortcuts Shortcuts
+@inject ImejiJs Js
+@inject ILogger<Feed> Logger
+
+<PageTitle>@(_query.IsEmpty ? "Feed · Imeji" : $"{_query} · Feed · Imeji")</PageTitle>
+
+<div class="feed">
+    <AppHeader View="feed" />
+
+    <div class="feed-mobile-top">
+        <nav class="feed-tabs" aria-label="Feed source">
+            <a href="@Links.Feed(SearchQuery.Empty)" aria-current="@(_query.IsEmpty ? "page" : null)">Latest</a>
+            @if (!_query.IsEmpty)
+            {
+                <a href="@Links.Feed(_query)" class="mono" aria-current="page">@_query</a>
+            }
+            <button type="button" aria-label="Search for a feed" @onclick="Session.OpenPalette">+</button>
+        </nav>
+        <SortMenu View="feed" />
+        <RatingMenu ShowLabel="false" />
+    </div>
+
+    @if (_posts.Count == 0 && _error is not null)
+    {
+        <div class="status-message" style="padding-top: 160px" role="alert"><h2>No posts</h2><p>@_error</p></div>
+    }
+    else if (_posts.Count == 0 && _reachedEnd)
+    {
+        <div class="status-message" style="padding-top: 160px"><h2>Nothing found</h2><p>No posts match <span class="mono">@_query</span> with the ratings you picked.</p></div>
+    }
+
+    @for (var i = 0; i < _posts.Count; i++)
+    {
+        var post = _posts[i];
+        var upNext = _posts.Skip(i + 1).Take(3).ToList();
+        var tags = post.TopTags.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var similar = tags.FirstOrDefault() ?? post.ArtistTags.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+
+        <section @key="post.Id" class="feed-slide @(_optionsOpenFor == post.Id ? "options-open" : "")" id="slide-@post.Id" aria-label="Post @post.Id">
+            <div class="feed-meta">
+                @foreach (var artist in post.ArtistTags.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    <a class="artist" href="@Links.Tag(artist)">@artist</a>
+                }
+                <div class="feed-tags">
+                    @foreach (var tag in tags.Take(4))
+                    {
+                        <a href="@Links.Tag(tag)">@tag</a>
+                    }
+                    @if (post.TagCount > 4)
+                    {
+                        <a href="@Links.Post(post.Id)" style="color: var(--muted)">+@(post.TagCount - 4)</a>
+                    }
+                </div>
+                <span class="when">#@post.Id · @TimeAgo(post.CreatedAt)</span>
+            </div>
+
+            <div class="feed-media">
+                @if (post.IsVideo)
+                {
+                    <video controls loop muted playsinline preload="none" src="@post.SampleUrl" poster="@post.PreviewUrl" aria-label="Post @post.Id"></video>
+                }
+                else
+                {
+                    <a href="@Links.Post(post.Id)" aria-label="Open post @post.Id">
+                        <img src="@post.SampleUrl" alt="" loading="@(i < 2 ? "eager" : "lazy")" decoding="async" />
+                    </a>
+                }
+            </div>
+
+            <div class="feed-side">
+                <div class="feed-actions" role="toolbar" aria-label="Post actions" aria-orientation="vertical">
+                    <a class="feed-action" href="@Links.Post(post.Id)"><span class="disc"><Icon Name="tag" Size="20" /></span>Tags</a>
+                    @if (similar is not null)
+                    {
+                        <a class="feed-action" href="@Links.Feed(new SearchQuery([similar], []))" title="More with @similar"><span class="disc"><Icon Name="similar" Size="20" /></span>Similar</a>
+                    }
+                    <a class="feed-action" href="@Links.Original(post.Id)" target="_blank" rel="noopener"><span class="disc"><Icon Name="external" Size="20" /></span>Danbooru</a>
+                    <a class="feed-action primary" href="@Links.Download(post.Id)" download><span class="disc"><Icon Name="download" Size="20" /></span>Save</a>
+                </div>
+                <div class="feed-upnext">
+                    <div class="thumbs">
+                        @if (upNext.Count > 0)
+                        {
+                            <span class="section-label">Up next</span>
+                        }
+                        @foreach (var next in upNext)
+                        {
+                            <button type="button" aria-label="Skip to post @next.Id" @onclick='() => Js.ScrollIntoViewAsync($"#slide-{next.Id}")'>
+                                <img src="@next.PreviewUrl" alt="" loading="lazy" />
+                            </button>
+                        }
+                    </div>
+                    <div class="feed-keys">
+                        <span><kbd>J</kbd> <kbd>K</kbd> next / prev</span>
+                        <span>or scroll</span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="feed-options-toggle glass" aria-expanded="@(_optionsOpenFor == post.Id ? "true" : "false")"
+                    aria-label="@(_optionsOpenFor == post.Id ? "Hide options" : "Show options")"
+                    @onclick="() => _optionsOpenFor = _optionsOpenFor == post.Id ? null : post.Id">
+                <Icon Name="@(_optionsOpenFor == post.Id ? "close" : "more")" Size="20" StrokeWidth="2.2" />
+            </button>
+        </section>
+    }
+
+    @if (_posts.Count > 0 && !_reachedEnd && _error is null)
+    {
+        <InfiniteScrollTrigger @key="_generation" LoadMore="LoadMoreAsync" />
+    }
+    else if (_posts.Count > 0)
+    {
+        <div class="feed-end">@(_error ?? "You've seen everything.")</div>
+    }
+
+    <BottomNav Current="feed" />
+</div>
+
+@code {
+    private const int BatchSize = 20;
+
+    [SupplyParameterFromQuery(Name = "tags")]
+    public string? Tags { get; set; }
+
+    [SupplyParameterFromQuery(Name = "order")]
+    public string? Order { get; set; }
+
+    [PersistentState]
+    public FeedSnapshot? Snapshot { get; set; }
+
+    private SearchQuery _query = SearchQuery.Empty;
+    private readonly List<PostSummary> _posts = [];
+    private readonly HashSet<int> _postIds = [];
+    private string? _loadedKey;
+    private string? _error;
+    private bool _reachedEnd;
+    private bool _isLoading;
+    private int _generation;
+    private int? _optionsOpenFor;
+    private bool _restoredFromCache;
+    private int _nextPage = 1;
+    private IJSObjectReference? _autoplayHandle;
+
+    private string DanbooruQuery => _query.ToDanbooruQuery(Preferences.Ratings);
+
+    protected override void OnInitialized()
+    {
+        Shortcuts.KeyPressed += OnKeyAsync;
+        Preferences.Changed += OnPreferencesChanged;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _query = SearchQuery.Parse(Tags, SortOrderExtensions.Parse(Order));
+        Session.SetQuery(_query);
+        await LoadIfSearchChangedAsync();
+    }
+
+    private async Task LoadIfSearchChangedAsync()
+    {
+        if (DanbooruQuery == _loadedKey)
+        {
+            return;
+        }
+
+        _loadedKey = DanbooruQuery;
+        _posts.Clear();
+        _postIds.Clear();
+        _error = null;
+        _reachedEnd = false;
+        _nextPage = 1;
+        _generation++;
+
+        // Coming back from the viewer: show what was loaded before, at the same slide.
+        if (Session.FeedCache is { } cache && cache.Key == DanbooruQuery)
+        {
+            Add(cache.Posts);
+            _reachedEnd = cache.ReachedEnd;
+            _nextPage = cache.NextPage;
+            _restoredFromCache = true;
+            return;
+        }
+
+        if (Snapshot is { } snapshot && snapshot.Key == DanbooruQuery)
+        {
+            Add(snapshot.Posts);
+            _nextPage = 2;
+            return;
+        }
+
+        await FetchAsync();
+        UpdateCache();
+        Snapshot = new FeedSnapshot(DanbooruQuery, [.. _posts]);
+    }
+
+    private async Task<bool> FetchAsync()
+    {
+        var key = _loadedKey;
+
+        // Newest first pages by id ("posts before this one"), which Danbooru does not cap like page numbers.
+        // Other orders are not by id, so they page by number.
+        var byId = _query.Order == SortOrder.Newest && _posts.Count > 0;
+        if (!byId && _nextPage > SearchErrors.MaxPage)
+        {
+            _reachedEnd = true;
+            return false;
+        }
+
+        var page = byId ? $"b{_posts.Min(x => x.Id)}" : _nextPage.ToString();
+        try
+        {
+            var posts = await Danbooru.Posts.SearchAsync(DanbooruQuery, page, BatchSize);
+            if (key != _loadedKey)
+            {
+                return false;
+            }
+
+            _nextPage++;
+            var added = Add(posts.Select(PostSummary.From));
+            _reachedEnd = posts.Count == 0;
+            return added > 0;
+        }
+        catch (HttpRequestException ex)
+        {
+            Logger.LogWarning(ex, "Loading the feed for {query} failed.", DanbooruQuery);
+            if (key == _loadedKey)
+            {
+                _error = SearchErrors.Describe(ex);
+            }
+
+            return false;
+        }
+    }
+
+    private int Add(IEnumerable<PostSummary> posts)
+    {
+        var added = posts.Where(x => x.HasMedia && _postIds.Add(x.Id)).ToList();
+        _posts.AddRange(added);
+        Session.SetResults([.. _posts], null);
+        return added.Count;
+    }
+
+    private async Task<bool> LoadMoreAsync()
+    {
+        if (_isLoading || _reachedEnd)
+        {
+            return false;
+        }
+
+        _isLoading = true;
+        try
+        {
+            var loaded = await FetchAsync();
+            UpdateCache();
+
+            // Called from JS interop, which does not re-render on its own.
+            StateHasChanged();
+            return loaded;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void UpdateCache() => Session.FeedCache = new FeedCache(DanbooruQuery, [.. _posts], _reachedEnd, _nextPage);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _autoplayHandle = await Js.AutoplayVideosAsync();
+        }
+
+        if (_restoredFromCache)
+        {
+            _restoredFromCache = false;
+            await Js.RestoreScrollAsync();
+        }
+    }
+
+    private async Task<bool> OnKeyAsync(string key)
+    {
+        if (Session.IsPaletteOpen || key is not ("j" or "k"))
+        {
+            return false;
+        }
+
+        await Js.StepFeedAsync(key == "j" ? 1 : -1);
+        return true;
+    }
+
+    private void OnPreferencesChanged() => InvokeAsync(async () =>
+    {
+        await LoadIfSearchChangedAsync();
+        StateHasChanged();
+    });
+
+    private static string TimeAgo(DateTime createdAt)
+    {
+        var age = DateTime.Now - createdAt;
+        return age.TotalMinutes switch
+        {
+            < 1 => "just now",
+            < 60 => $"{(int)age.TotalMinutes} min ago",
+            < 60 * 24 => $"{(int)age.TotalHours} h ago",
+            < 60 * 24 * 30 => $"{(int)age.TotalDays} d ago",
+            _ => createdAt.ToString("d MMM yyyy", System.Globalization.CultureInfo.InvariantCulture)
+        };
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Shortcuts.KeyPressed -= OnKeyAsync;
+        Preferences.Changed -= OnPreferencesChanged;
+        await _autoplayHandle.DisposeHandleAsync();
+    }
+}
