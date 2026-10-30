@@ -151,6 +151,22 @@ public class ImejiTests(AppFixture app) : IClassFixture<AppFixture>
     }
 
     [Fact]
+    public async Task Feed_ShouldRememberUnmutingForTheSession()
+    {
+        var page = await app.OpenAsync("/feed", width: 390, height: 844);
+        var video = page.Locator(".feed-slide video").First;
+        await video.ScrollIntoViewIfNeededAsync();
+        await page.WaitForFunctionAsync("() => document.querySelector('.feed-slide video').dataset.expectedMuted === 'true'");
+
+        // What the player's mute button does.
+        await video.EvaluateAsync("v => v.muted = false");
+        await page.WaitForFunctionAsync("() => sessionStorage.getItem('imeji-feed-muted') === 'false'");
+
+        await video.EvaluateAsync("v => v.muted = true");
+        await page.WaitForFunctionAsync("() => sessionStorage.getItem('imeji-feed-muted') === 'true'");
+    }
+
+    [Fact]
     public async Task Feed_ShouldStepWithJ()
     {
         var page = await app.OpenAsync("/feed");
