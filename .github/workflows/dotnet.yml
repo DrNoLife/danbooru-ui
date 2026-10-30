@@ -67,7 +67,7 @@ jobs:
 
       # Builds and smoke-tests the image; images are published by release.yml when a version tag is pushed.
       - name: Build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: Danbooru
           file: Danbooru/Danbooru.UI/Danbooru.UI/Dockerfile
