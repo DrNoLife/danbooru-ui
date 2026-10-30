@@ -54,7 +54,8 @@ public sealed class ImejiJs(IJSRuntime js) : IAsyncDisposable
     public async Task<IJSObjectReference> AttachSwipeAsync<T>(ElementReference element, DotNetObjectReference<T> target) where T : class =>
         await (await Module).InvokeAsync<IJSObjectReference>("attachSwipe", element, target);
 
-    public async Task PreloadImagesAsync(IEnumerable<string> urls) => await (await Module).InvokeVoidAsync("preloadImages", urls.ToArray());
+    // Cast to object: a bare string[] would be taken as the params array itself and spread into separate arguments.
+    public async Task PreloadImagesAsync(IEnumerable<string> urls) => await (await Module).InvokeVoidAsync("preloadImages", (object)urls.ToArray());
 
     /// <summary>
     /// Plays feed videos while they are on screen. Dispose the result to stop.

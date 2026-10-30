@@ -1082,6 +1082,30 @@ kbd {
 .tag-row .add { color: var(--add); }
 .tag-row .exclude { color: var(--remove); }
 
+.prompt-box {
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 10px 12px;
+}
+
+.prompt-box summary {
+    cursor: pointer;
+}
+
+.prompt-box p {
+    margin: 10px 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-soft);
+    overflow-wrap: anywhere;
+    user-select: all;
+}
+
+.prompt-box .btn {
+    height: 36px;
+    font-size: 13px;
+}
+
 .show-all {
     align-self: flex-start;
     height: 32px;
