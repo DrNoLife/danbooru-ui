@@ -63,7 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       # Builds and smoke-tests the image; images are published by release.yml when a version tag is pushed.
       - name: Build
